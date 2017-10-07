@@ -18,7 +18,7 @@ const serverUrl = "https://localhost:5000/track"
 
 let appId = ""
 
-let queue = JSON.parse(localStorage.getItem('queue')) || []
+let queue =  localStorage.getItem('queue') ? JSON.parse(localStorage.getItem('queue')) : []
 
 console.log(queue)
 
