@@ -1,0 +1,28 @@
+{
+  "name": "electron-nucleus",
+  "version": "0.1.0",
+  "description": "Analytics & more for Electron",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vincelwt/electron-nucleus.git"
+  },
+  "keywords": [
+    "analytics",
+    "electron",
+    "license"
+  ],
+  "author": "Vincent L.",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/vincelwt/electron-nucleus/issues"
+  },
+  "homepage": "https://github.com/vincelwt/electron-nucleus#readme",
+  "dependencies": {
+    "node-machine-id": "^1.1.9",
+    "request": "^2.83.0"
+  }
+}
