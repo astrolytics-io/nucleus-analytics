@@ -4,9 +4,13 @@ const {remote} = require('electron')
 const request = require('request')
 
 const userId = require('node-machine-id').machineIdSync()
-const platform = process.platform
+const platform = process.platform.replace("darwin", "mac")
 const version = remote.app.getVersion()
 const language = navigator.language
+let newUser = false
+
+const Store = require('electron-store')
+const store = new Store()
 
 // Taken from sindresorhus/electron-is-dev, thanks to the author
 const getFromEnv = parseInt(process.env.ELECTRON_IS_DEV, 10) === 1
@@ -17,10 +21,10 @@ const devModeEnabled = isEnvSet ? getFromEnv : (process.defaultApp || /node_modu
 const serverUrl = "https://localhost:5000/track"
 
 let appId = ""
+let queue = []
 
-let queue =  localStorage.getItem('queue') ? JSON.parse(localStorage.getItem('queue')) : []
-
-console.log(queue)
+if (store.has('queue')) queue = store.get('queue')
+else newUser = true
 
 module.exports = {
 
@@ -36,10 +40,11 @@ module.exports = {
 				user: userId,
 				platform: platform,
 				version: version,
-				language: language
+				language: language,
+				newUser: newUser
 			})
 
-			localStorage.setItem('queue', JSON.stringify(queue))
+			store.set('queue', queue)
 
 			reportData()
 
@@ -57,7 +62,7 @@ module.exports = {
 				user: userId
 			})
 
-			localStorage.setItem('queue', JSON.stringify(queue))
+			store.set('queue', queue)
 
 			reportData()
 
@@ -70,22 +75,28 @@ module.exports = {
 	}
 }
 
+window.addEventListener('online', () => {
+	reportData()
+})
+
 function reportData() {
-	request({ url: serverUrl+'/'+appId, method: 'POST', json: {data: queue} }, function (err, res, body) {
-		console.log(err, body)
+	if (queue.length) {
+		request({ url: serverUrl+'/'+appId, method: 'POST', json: {data: queue} }, function (err, res, body) {
+			console.log(err, body)
 
-		if (err) {
-			// No internet or error with server
-			// Data will be sent with next request
+			if (err) {
+				// No internet or error with server
+				// Data will be sent with next request
 
-		} else {
-			// Data was successfully reported
+			} else {
+				// Data was successfully reported
 
-			queued = []
+				queued = []
 
-			localStorage.setItem('queue', JSON.stringify(queue))
+				store.set('queue', queue)
 
-		}
+			}
 
-	})
+		})
+	}
 }
