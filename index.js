@@ -20,6 +20,8 @@ let appId = ""
 
 let queue = localStorage.getItem('queue') || []
 
+console.log(queue)
+
 module.exports = {
 
 	init: function(appId, useInDev) {
@@ -69,7 +71,7 @@ module.exports = {
 }
 
 function reportData() {
-	request({ url: url+'/'+appId, method: 'POST', json: {data: queue} }, function (err, res, body) {
+	request({ url: serverUrl+'/'+appId, method: 'POST', json: {data: queue} }, function (err, res, body) {
 
 		if (err) {
 			// No internet or error with server
