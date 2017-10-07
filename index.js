@@ -14,7 +14,7 @@ const isEnvSet = 'ELECTRON_IS_DEV' in process.env
 const devModeEnabled = isEnvSet ? getFromEnv : (process.defaultApp || /node_modules[\\/]electron[\\/]/.test(process.execPath))
 //
 
-const serverUrl = "https://nucleusmetrics.com/track"
+const serverUrl = "https://localhost:5000/track"
 
 let appId = ""
 
@@ -22,9 +22,9 @@ let queue = localStorage.getItem('queue') || []
 
 module.exports = {
 
-	init: function(appId) {
+	init: function(appId, useInDev) {
 
-		if (appId && !devModeEnabled) {
+		if (appId && (!devModeEnabled || useInDev)) {
 
 			appId = appId
 
@@ -83,6 +83,6 @@ function reportData() {
 			localStorage.setItem('queue', queue)
 
 		}
-		
+
 	})
 }
