@@ -18,7 +18,7 @@ const serverUrl = "https://localhost:5000/track"
 
 let appId = ""
 
-let queue = localStorage.getItem('queue') || []
+let queue = JSON.parse(localStorage.getItem('queue')) || []
 
 console.log(queue)
 
@@ -39,7 +39,7 @@ module.exports = {
 				language: language
 			})
 
-			localStorage.setItem('queue', queue)
+			localStorage.setItem('queue', JSON.stringify(queue))
 
 			reportData()
 
@@ -57,7 +57,7 @@ module.exports = {
 				user: userId
 			})
 
-			localStorage.setItem('queue', queue)
+			localStorage.setItem('queue', JSON.stringify(queue))
 
 			reportData()
 
@@ -72,6 +72,7 @@ module.exports = {
 
 function reportData() {
 	request({ url: serverUrl+'/'+appId, method: 'POST', json: {data: queue} }, function (err, res, body) {
+		console.log(err, body)
 
 		if (err) {
 			// No internet or error with server
@@ -82,7 +83,7 @@ function reportData() {
 
 			queued = []
 
-			localStorage.setItem('queue', queue)
+			localStorage.setItem('queue', JSON.stringify(queue))
 
 		}
 
