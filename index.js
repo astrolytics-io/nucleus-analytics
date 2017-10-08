@@ -18,26 +18,29 @@ const isEnvSet = 'ELECTRON_IS_DEV' in process.env
 const devModeEnabled = isEnvSet ? getFromEnv : (process.defaultApp || /node_modules[\\/]electron[\\/]/.test(process.execPath))
 //
 
-const serverUrl = "https://localhost:5000/track"
+const serverUrl = "http://localhost:5000/track/"
 
 let appId = ""
 let queue = []
+
+let useInDev = false
 
 if (store.has('queue')) queue = store.get('queue')
 else newUser = true
 
 module.exports = {
 
-	init: function(appId, useInDev) {
+	init: (app, dev) => {
+		useInDev = dev
 
-		if (appId && (!devModeEnabled || useInDev)) {
+		if (app && (!devModeEnabled || useInDev)) {
 
-			appId = appId
+			appId = app
 
 			queue.push({
 				event: 'init',
-				date: new Date(),
-				user: userId,
+				date: new Date().toISOString().slice(0, 10),
+				userId: userId,
 				platform: platform,
 				version: version,
 				language: language,
@@ -52,14 +55,14 @@ module.exports = {
 
 	},
 
-	track: function(eventName) {
+	track: (eventName) => {
 
-		if (eventName && !devModeEnabled) {
+		if (eventName && (!devModeEnabled || useInDev)) {
 
 			queue.push({
 				event: eventName,
-				date: new Date(),
-				user: userId
+				date: new Date().toISOString().slice(0, 10),
+				userId: userId
 			})
 
 			store.set('queue', queue)
@@ -70,7 +73,7 @@ module.exports = {
 
 	},
 
-	checkLicense: function(license) {
+	checkLicense: (license) => {
 
 	}
 }
@@ -81,8 +84,7 @@ window.addEventListener('online', () => {
 
 function reportData() {
 	if (queue.length) {
-		request({ url: serverUrl+'/'+appId, method: 'POST', json: {data: queue} }, function (err, res, body) {
-			console.log(err, body)
+		request({ url: serverUrl+appId, method: 'POST', json: {data: queue} }, (err, res, body) => {
 
 			if (err) {
 				// No internet or error with server
@@ -91,7 +93,7 @@ function reportData() {
 			} else {
 				// Data was successfully reported
 
-				queued = []
+				queue = []
 
 				store.set('queue', queue)
 
