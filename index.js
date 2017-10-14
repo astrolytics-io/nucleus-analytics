@@ -18,7 +18,7 @@ const isEnvSet = 'ELECTRON_IS_DEV' in process.env
 const devModeEnabled = isEnvSet ? getFromEnv : (process.defaultApp || /node_modules[\\/]electron[\\/]/.test(process.execPath))
 //
 
-const serverUrl = "http://localhost:5000/track/"
+const serverUrl = "https://nucleus.sh/track/"
 
 let appId = ""
 let queue = []
