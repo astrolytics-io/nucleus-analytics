@@ -1,4 +1,4 @@
-# electron-nucleus
+# electron-nucleus [![npm](https://img.shields.io/npm/v/electron-nucleus.svg)](https://www.npmjs.com/package/electron-nucleus)
 Analytics made simple for Electron using [Nucleus](https://nucleus.sh).
 
 To start using this module you need to sign up and get an app id on the [Nucleus website](https://nucleus.sh). 
