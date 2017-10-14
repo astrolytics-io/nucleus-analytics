@@ -13,7 +13,7 @@ Using npm:
 ```bash
 $ npm install electron-nucleus --save
 ```
-<br><br>
+<br>
 
 ## Usage
 
