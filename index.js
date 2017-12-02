@@ -6,7 +6,7 @@ const request = require('request')
 const userId = require('node-machine-id').machineIdSync()
 const platform = process.platform.replace("darwin", "mac")
 const version = remote.app.getVersion()
-const language = navigator.language
+const language = (navigator.language || navigator.userLanguage).substring(0,2)
 let newUser = false
 
 const Store = require('electron-store')
