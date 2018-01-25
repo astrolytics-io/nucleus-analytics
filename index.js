@@ -1,26 +1,36 @@
 'use strict';
 
-const {remote} = require('electron')
+const {remote, crashReporter} = require('electron')
 const request = require('request')
-
-const userId = require('node-machine-id').machineIdSync()
-const platform = process.platform.replace("darwin", "mac")
-const version = remote.app.getVersion()
-const language = (navigator.language || navigator.userLanguage).substring(0,2)
-let newUser = false
 
 const Store = require('electron-store')
 const store = new Store()
 
-// Taken from sindresorhus/electron-is-dev, thanks to the author
+/// Thanks to jprichardson/is-electron-renderer
+function isRenderer () {
+	if (typeof process === 'undefined' || !process) return true // running in a web browser or node-integration is disabled
+	if (!process.type) return false // We're in node.js somehow
+	return process.type === 'renderer'
+}
+
+//  From sindresorhus/electron-is-dev, thanks to the author
 const getFromEnv = parseInt(process.env.ELECTRON_IS_DEV, 10) === 1
 const isEnvSet = 'ELECTRON_IS_DEV' in process.env
 const devModeEnabled = isEnvSet ? getFromEnv : (process.defaultApp || /node_modules[\\/]electron[\\/]/.test(process.execPath))
-//
+/////////
 
-const serverUrl = "https://nucleus.sh/track/"
+const apiUrl = "https://nucleus.sh"
+//const apiUrl = "http://localhost:5000"
 
-let appId = ""
+/// Data reported to server
+const userId = require('node-machine-id').machineIdSync()
+const platform = process.platform.replace("darwin", "mac")
+const version = devModeEnabled ? '0.0.0' : remote.app.getVersion()
+const language = typeof navigator !== 'undefined' ? (navigator.language || navigator.userLanguage).substring(0,2) : null
+//////
+let newUser = false
+
+let appId
 let queue = []
 
 let useInDev = false
@@ -28,14 +38,25 @@ let useInDev = false
 if (store.has('queue')) queue = store.get('queue')
 else newUser = true
 
-module.exports = {
+module.exports = (app, dev) => {
 
-	init: (app, dev) => {
+	let module = {}
+
+	module.init = (app, dev) => {
 		useInDev = dev
 
 		if (app && (!devModeEnabled || useInDev)) {
 
 			appId = app
+
+			crashReporter.start({
+				productName: appId,
+				companyName: 'nucleus',
+				submitURL: `${apiUrl}/app/${appId}/crash`,
+				uploadToServer: true
+			})
+
+			if (!isRenderer()) return
 
 			queue.push({
 				event: 'init',
@@ -48,14 +69,17 @@ module.exports = {
 			})
 
 			store.set('queue', queue)
-
 			reportData()
 
+			// Automatically send data when back online
+			window.addEventListener('online', _ => {
+				reportData()
+			})
+
 		}
+	}
 
-	},
-
-	track: (eventName) => {
+	module.track = (eventName) => {
 
 		if (eventName && (!devModeEnabled || useInDev)) {
 
@@ -71,20 +95,31 @@ module.exports = {
 
 		}
 
-	},
-
-	checkLicense: (license) => {
-
 	}
+
+	module.checkLicense = (license, callback) => {
+
+		if (license) {
+			request({ url: `${apiUrl}/app/${appId}/license/${license}`, method: 'GET', json: true }, (err, res, body) => {
+
+				callback(err, body)
+
+			})
+		}
+	}
+
+
+	if (app) module.init(app, dev) // So it inits if we directly pass the app id
+
+	return module
+
 }
 
-window.addEventListener('online', () => {
-	reportData()
-})
 
+// Try to report the data to the server
 function reportData() {
 	if (queue.length) {
-		request({ url: serverUrl+appId, method: 'POST', json: {data: queue} }, (err, res, body) => {
+		request({ url: `${apiUrl}/app/${appId}/track`, method: 'POST', json: {data: queue} }, (err, res, body) => {
 
 			if (err) {
 				// No internet or error with server
