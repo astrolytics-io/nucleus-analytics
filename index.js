@@ -6,6 +6,7 @@ const request = require('request')
 const Store = require('electron-store')
 const store = new Store()
 
+
 /// Thanks to jprichardson/is-electron-renderer
 function isRenderer () {
 	if (typeof process === 'undefined' || !process) return true // running in a web browser or node-integration is disabled
@@ -19,11 +20,8 @@ const isEnvSet = 'ELECTRON_IS_DEV' in process.env
 const devModeEnabled = isEnvSet ? getFromEnv : (process.defaultApp || /node_modules[\\/]electron[\\/]/.test(process.execPath))
 /////////
 
-const apiUrl = "https://nucleus.sh"
-//const apiUrl = "http://localhost:5000"
-
 /// Data reported to server
-const userId = require('node-machine-id').machineIdSync()
+const machineId = require('node-machine-id').machineIdSync()
 const platform = process.platform.replace("darwin", "mac")
 const version = devModeEnabled ? '0.0.0' : remote.app.getVersion()
 const language = typeof navigator !== 'undefined' ? (navigator.language || navigator.userLanguage).substring(0,2) : null
@@ -35,8 +33,15 @@ let queue = []
 
 let useInDev = false
 
+const apiUrl = "https://nucleus.sh"
+//const apiUrl = "http://localhost:5000"
+
+
 if (store.has('queue')) queue = store.get('queue')
 else newUser = true
+
+
+
 
 module.exports = (app, dev) => {
 
@@ -61,7 +66,7 @@ module.exports = (app, dev) => {
 			queue.push({
 				event: 'init',
 				date: new Date().toISOString().slice(0, 10),
-				userId: userId,
+				userId: machineId,
 				platform: platform,
 				version: version,
 				language: language,
@@ -99,13 +104,20 @@ module.exports = (app, dev) => {
 
 	module.checkLicense = (license, callback) => {
 
-		if (license) {
-			request({ url: `${apiUrl}/app/${appId}/license/${license}`, method: 'GET', json: true }, (err, res, body) => {
-
-				callback(err, body)
-
-			})
+		if (!license) return
+			
+		let data = {
+			key: license,
+			machineId: machineId,
+			platform: platform,
+			version: version
 		}
+
+		request({ url: `${apiUrl}/app/${appId}/license/validate`, method: 'POST', json: {data: data} }, (err, res, body) => {
+
+			callback(err, body)
+
+		})
 	}
 
 
