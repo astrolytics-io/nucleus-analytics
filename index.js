@@ -2,45 +2,32 @@
 
 const {remote, crashReporter} = require('electron')
 const request = require('request')
+const WebSocket = require('ws')
 
 const Store = require('electron-store')
 const store = new Store()
-
-
-/// Thanks to jprichardson/is-electron-renderer
-function isRenderer () {
-	if (typeof process === 'undefined' || !process) return true // running in a web browser or node-integration is disabled
-	if (!process.type) return false // We're in node.js somehow
-	return process.type === 'renderer'
-}
-
-//  From sindresorhus/electron-is-dev, thanks to the author
-const getFromEnv = parseInt(process.env.ELECTRON_IS_DEV, 10) === 1
-const isEnvSet = 'ELECTRON_IS_DEV' in process.env
-const devModeEnabled = isEnvSet ? getFromEnv : (process.defaultApp || /node_modules[\\/]electron[\\/]/.test(process.execPath))
-/////////
+const utils = require('./utils.js')
 
 /// Data reported to server
 const machineId = require('node-machine-id').machineIdSync()
 const platform = process.platform.replace("darwin", "mac")
-const version = devModeEnabled ? '0.0.0' : remote.app.getVersion()
+const version = utils.isDevMode() ? '0.0.0' : remote.app.getVersion()
 const language = typeof navigator !== 'undefined' ? (navigator.language || navigator.userLanguage).substring(0,2) : null
-//////
-let newUser = false
 
-let appId
+let ws = null // Used later on for global access
+let wsConfirmation = null
+let newUser = false
+let useInDev = false
+let appId = null
 let queue = []
 
-let useInDev = false
 
-const apiUrl = "https://nucleus.sh"
-//const apiUrl = "http://localhost:5000"
+const apiUrl = "nucleus.sh"
+//const apiUrl = "localhost:5000"
 
 
 if (store.has('queue')) queue = store.get('queue')
 else newUser = true
-
-
 
 
 module.exports = (app, dev) => {
@@ -50,18 +37,19 @@ module.exports = (app, dev) => {
 	module.init = (app, dev) => {
 		useInDev = dev
 
-		if (app && (!devModeEnabled || useInDev)) {
+		if (app && (!utils.isDevMode() || useInDev)) {
 
 			appId = app
 
 			crashReporter.start({
 				productName: appId,
 				companyName: 'nucleus',
-				submitURL: `${apiUrl}/app/${appId}/crash`,
+				submitURL: `https://${apiUrl}/app/${appId}/crash`,
 				uploadToServer: true
 			})
 
-			if (!isRenderer()) return
+			// The rest is only for renderer process
+			if (!utils.isRenderer()) return
 
 			queue.push({
 				event: 'init',
@@ -82,16 +70,17 @@ module.exports = (app, dev) => {
 			})
 
 		}
+		
 	}
 
 	module.track = (eventName) => {
 
-		if (eventName && (!devModeEnabled || useInDev)) {
+		if (eventName && (!utils.isDevMode() || useInDev)) {
 
 			queue.push({
 				event: eventName,
 				date: new Date().toISOString().slice(0, 10),
-				userId: userId
+				userId: machineId
 			})
 
 			store.set('queue', queue)
@@ -113,7 +102,7 @@ module.exports = (app, dev) => {
 			version: version
 		}
 
-		request({ url: `${apiUrl}/app/${appId}/license/validate`, method: 'POST', json: {data: data} }, (err, res, body) => {
+		request({ url: `https://${apiUrl}/app/${appId}/license/validate`, method: 'POST', json: {data: data} }, (err, res, body) => {
 
 			callback(err, body)
 
@@ -129,23 +118,49 @@ module.exports = (app, dev) => {
 
 
 // Try to report the data to the server
+
 function reportData() {
+
+	function send() {
+		// Send an unique random token with it to check if server successfully got it
+		wsConfirmation = Math.random().toString()
+
+		let payload = {
+			confirmation: wsConfirmation,
+			data: queue
+		}
+
+		ws.send(JSON.stringify(payload))
+	}
+
+
 	if (queue.length) {
-		request({ url: `${apiUrl}/app/${appId}/track`, method: 'POST', json: {data: queue} }, (err, res, body) => {
 
-			if (err) {
-				// No internet or error with server
-				// Data will be sent with next request
+		if (!ws) {
+			ws = new WebSocket(`ws://${apiUrl}/app/${appId}/track`)
 
-			} else {
-				// Data was successfully reported
+			// We are going to need to open this later
+			ws.on('error', (err) => ws = null)
+			ws.on('close', () => ws = null)
 
-				queue = []
+			ws.on('open', send )
 
-				store.set('queue', queue)
+			ws.on('message', (confirmation) => {
 
-			}
+				if (confirmation === wsConfirmation) {
+					// Data was successfully reported
 
-		})
+					queue = []
+
+					store.set('queue', queue)
+				}
+
+			})
+				
+
+		} else {
+			send()
+		}
+
 	}
 }
