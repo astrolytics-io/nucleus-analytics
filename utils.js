@@ -11,6 +11,10 @@ module.exports = {
 		const getFromEnv = parseInt(process.env.ELECTRON_IS_DEV, 10) === 1
 		const isEnvSet = 'ELECTRON_IS_DEV' in process.env
 		return isEnvSet ? getFromEnv : (process.defaultApp || /node_modules[\\/]electron[\\/]/.test(process.execPath))
-	}
+	},
+	getLocalTime: () => {
+        let accessTime = new Date()
+        return new Date(accessTime.getTime()- accessTime.getTimezoneOffset()*60000)
+    },
 
 }

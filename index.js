@@ -53,7 +53,7 @@ module.exports = (app, dev) => {
 
 			queue.push({
 				event: 'init',
-				date: new Date().toISOString().slice(0, 10),
+				date: utils.getLocalTime(),
 				userId: machineId,
 				platform: platform,
 				version: version,
@@ -79,7 +79,7 @@ module.exports = (app, dev) => {
 
 			queue.push({
 				event: eventName,
-				date: new Date().toISOString().slice(0, 10),
+				date: utils.getLocalTime(),
 				userId: machineId
 			})
 
@@ -140,8 +140,8 @@ function reportData() {
 			ws = new WebSocket(`ws://${apiUrl}/app/${appId}/track`)
 
 			// We are going to need to open this later
-			ws.on('error', (err) => ws = null)
-			ws.on('close', () => ws = null)
+			ws.on('error', _ => ws = null)
+			ws.on('close', _ => ws = null)
 
 			ws.on('open', send )
 
@@ -149,14 +149,12 @@ function reportData() {
 
 				if (confirmation === wsConfirmation) {
 					// Data was successfully reported
-
 					queue = []
 
 					store.set('queue', queue)
 				}
 
 			})
-				
 
 		} else {
 			send()
