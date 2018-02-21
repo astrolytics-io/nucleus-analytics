@@ -122,9 +122,7 @@ module.exports = (app, options) => {
 
 		// Ask for the server to validate it
 		request({ url: `https://${apiUrl}/app/${appId}/license/validate`, method: 'POST', json: {data: data} }, (err, res, body) => {
-
-			callback(err, body)
-
+			callback(err || body.error, body)
 		})
 	}
 
@@ -135,9 +133,7 @@ module.exports = (app, options) => {
 
 		// Else go pull it on the server
 		request({ url: `https://${apiUrl}/app/${appId}/customdata`, method: 'GET', json: true }, (err, res, body) => {
-
-			callback(err, body)
-
+			callback(err || body.error, body)
 		})
 
 	}
