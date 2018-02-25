@@ -5,7 +5,10 @@ const request = require('request')
 const WebSocket = require('ws')
 
 const Store = require('electron-store')
-const store = new Store()
+const store = new Store({
+	encryptionKey: 's0meR1nd0mK3y', // for obfuscation
+	name: 'nucleus'
+})
 const utils = require('./utils.js')
 
 /// Data reported to server
@@ -25,8 +28,8 @@ let appId = null
 let queue = []
 let cache = {}
 
-const apiUrl = "nucleus.sh"
-//const apiUrl = "localhost:5000" // Used in dev
+//const apiUrl = "nucleus.sh"
+const apiUrl = "localhost:5000" // Used in dev
 
 
 if (store.has('nucleus-cache')) cache = store.get('nucleus-cache')
@@ -149,7 +152,7 @@ module.exports = (app, options) => {
 function checkUpdates() {
 	let currentVersion = version
 
-	let updateAvailable = !!(!settings.disableUpdates && compareVersions(currentVersion, latestVersion) < 0)
+	let updateAvailable = !!(compareVersions(currentVersion, latestVersion) < 0)
 
 	// We call 'onNewUpdate' if the user created this function
 	if (!alertedUpdate && updateAvailable && typeof Nucleus.onNewUpdate === 'function') {
@@ -183,7 +186,7 @@ function reportData() {
 	if (queue.length) {
 
 		if (!ws) {
-			ws = new WebSocket(`wss://${apiUrl}/app/${appId}/track`)
+			ws = new WebSocket(`ws://${apiUrl}/app/${appId}/track`)
 
 			// We are going to need to open this later
 			ws.on('error', _ => console.warn)
