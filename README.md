@@ -40,12 +40,16 @@ const Nucleus = require("electron-nucleus")("<Your App Id>", true)
 
 ### Events
 
-After initializing **Nucleus**, you can send your own custom events.
+After initializing Nucleus, you can send your own custom events.
 
 ```javascript
 Nucleus.track("PLAYED_TRACK")
 ```
 
+They are a couple events that are reserved by Nucleus:
+`init`, `windowError`, `uncaughtException` and `unhandledRejection`
+
+You can't report these events.
 
 ### License checking
 
@@ -63,6 +67,36 @@ Nucleus.checkLicense('SOME_LICENSE', (err, license) => {
     }
 })
 ```
+
+### Errors
+
+Nucleus will report all `uncaughtException` and `unhandledRejection`.
+
+If you'd like to act on these errors, for example show them to your user, quit the app or reload it, you can define an onError function, which will be called on errors happening on the respective process.
+
+
+```javascript
+Nucleus.onError = (err, type) => {
+	console.error(err)
+	// type will either be uncaughtException, unhandledRejection or windowError
+}
+```
+
+
+`windowError` is an `uncaughtException` that happened in the rendered process. It was catched with `window.onerror`.
+
+
+### Updates
+
+If Nucleus detects that the user is running a version inferior to the one set in your app settings, it can call a function so you can alert the user (or something else).
+
+
+```javascript
+Nucleus.onUpdate = (lastVersion) => {
+	alert('New version available: ' + lastVersion)
+}
+```
+
 
 ### Custom metrics
 

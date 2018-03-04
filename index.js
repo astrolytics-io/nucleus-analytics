@@ -7,7 +7,7 @@ const WebSocket = require('ws')
 const Store = require('electron-store')
 const store = new Store({
 	encryptionKey: 's0meR1nd0mK3y', // for obfuscation
-	name: 'nucleus'
+	name: 'nucleus' // Doesn't interferate if app is using electron-store
 })
 const utils = require('./utils.js')
 
@@ -28,8 +28,8 @@ let appId = null
 let queue = []
 let cache = {}
 
-//const apiUrl = "nucleus.sh"
-const apiUrl = "localhost:5000" // Used in dev
+const apiUrl = "nucleus.sh"
+//const apiUrl = "localhost:5000" // Used in dev
 
 
 if (store.has('nucleus-cache')) cache = store.get('nucleus-cache')
@@ -42,7 +42,8 @@ module.exports = (app, options) => {
 
 	let module = {}
 
-	module.init = (app, options) => {
+	// not arrow for this
+	module.init = function(app, options) {
 
 		if (typeof options === 'boolean') {
 			// Legacy, will soon not work anymore
@@ -62,21 +63,22 @@ module.exports = (app, options) => {
 				uploadToServer: true
 			})
 
+			process.on('uncaughtException', err => {
+				trackError('uncaughtException', err)
+			})
+
+			process.on('unhandledRejection', err => {
+				trackError('unhandledRejection', err)
+			})
+
 			// The rest is only for renderer process
 			if (!utils.isRenderer()) return
 
-			queue.push({
-				event: 'init',
-				date: utils.getLocalTime(),
-				userId: machineId,
-				platform: platform,
-				version: version,
-				language: language,
-				newUser: newUser
-			})
+			window.onerror = (message, file, line, col, err) => {
+				trackError('windowError', err)
+			}
 
-			store.set('queue', queue)
-			reportData()
+			this.track('init')
 
 			// Automatically send data when back online
 			window.addEventListener('online', _ => {
@@ -87,14 +89,19 @@ module.exports = (app, options) => {
 		
 	}
 
-	module.track = (eventName) => {
+	module.track = (eventName, payload = null) => {
 
 		if (eventName && (!utils.isDevMode() || useInDev)) {
 
 			queue.push({
 				event: eventName,
 				date: utils.getLocalTime(),
-				userId: machineId
+				userId: machineId,
+				platform: platform,
+				version: version,
+				language: language,
+				payload: payload,
+				process: utils.isRenderer() ? 'renderer' : 'main'
 			})
 
 			store.set('queue', queue)
@@ -148,25 +155,38 @@ module.exports = (app, options) => {
 
 }
 
+const trackError = (type, err) => {
 
-function checkUpdates() {
+	// Convert Error to normal object, so we can stringify it
+	let errObject = {};
+	Object.getOwnPropertyNames(err).forEach(key => {
+		errObject[key] = err[key]
+	})
+
+	Nucleus.track(type, errObject)
+
+	if (typeof Nucleus.onError === 'function') Nucleus.onError(err, type)
+}
+
+
+const checkUpdates = () => {
 	let currentVersion = version
 
 	let updateAvailable = !!(compareVersions(currentVersion, latestVersion) < 0)
 
-	// We call 'onNewUpdate' if the user created this function
-	if (!alertedUpdate && updateAvailable && typeof Nucleus.onNewUpdate === 'function') {
+	// We call 'onUpdate' if the user created this function
+	if (!alertedUpdate && updateAvailable && typeof Nucleus.onUpdate === 'function') {
 		// So we don't trigger it 1000 times
 		alertedUpdate = true
 
-		Nucleus.onNewUpdate(latestVersion)
+		Nucleus.onUpdate(latestVersion)
 	}
 } 
 
 // Try to report the data to the server
-function reportData() {
+const reportData = () => {
 
-	function send() {
+	const send = () => {
 
 		// Connection not opened?
 		if (!ws || ws.readyState !== WebSocket.OPEN) return
@@ -186,41 +206,43 @@ function reportData() {
 	if (queue.length) {
 
 		if (!ws) {
-			ws = new WebSocket(`ws://${apiUrl}/app/${appId}/track`)
+			ws = new WebSocket(`wss://${apiUrl}/app/${appId}/track`)
 
 			// We are going to need to open this later
 			ws.on('error', _ => console.warn)
 			ws.on('close', _ => console.warn)
 
+			ws.on('message', messageFromServer)
+
 			ws.on('open', send )
-
-			ws.on('message', (message) => {
-
-				let data = JSON.parse(message)
-
-				if (data.customData) {
-					// Cache (or update cache) the custom data
-					cache.customData = data.customData
-					store.set('nucleus-cache', cache)
-				}
-
-				if (data.latestVersion) {
-					// Get the app's latest version
-					latestVersion = data.latestVersion
-					checkUpdates()
-				}
-
-				if (data.confirmation === data.confirmation) {
-					// Data was successfully reported, we can empty the queue (and save it)
-					queue = []
-					store.set('nucleus-queue', queue)
-				}
-
-			})
 
 		} else {
 			send()
 		}
 
 	}
+}
+
+const messageFromServer = (message) => {
+
+	let data = JSON.parse(message)
+
+	if (data.customData) {
+		// Cache (or update cache) the custom data
+		cache.customData = data.customData
+		store.set('nucleus-cache', cache)
+	}
+
+	if (data.latestVersion) {
+		// Get the app's latest version
+		latestVersion = data.latestVersion
+		checkUpdates()
+	}
+
+	if (data.confirmation === data.confirmation) {
+		// Data was successfully reported, we can empty the queue (and save it)
+		queue = []
+		store.set('nucleus-queue', queue)
+	}
+
 }
