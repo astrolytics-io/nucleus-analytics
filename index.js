@@ -1,6 +1,6 @@
 'use strict';
 
-const {remote, crashReporter} = require('electron')
+const {remote, app, crashReporter} = require('electron')
 const request = require('request')
 const WebSocket = require('ws')
 
@@ -9,12 +9,17 @@ const store = new Store({
 	encryptionKey: 's0meR1nd0mK3y', // for obfuscation
 	name: 'nucleus' // Doesn't interferate if app is using electron-store
 })
+
 const utils = require('./utils.js')
+
+const appObject = app || remote.app //Depends on process
 
 /// Data reported to server
 const machineId = require('node-machine-id').machineIdSync()
 const platform = process.platform.replace("darwin", "mac")
-const version = utils.isDevMode() ? '0.0.0' : remote.app.getVersion()
+
+//utils.isDevMode() ? '0.0.0' : 
+const version = appObject.getVersion()
 const language = typeof navigator !== 'undefined' ? (navigator.language || navigator.userLanguage).substring(0,2) : null
 
 // All the stuff we'll need later globally
