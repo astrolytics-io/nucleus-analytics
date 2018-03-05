@@ -17,9 +17,7 @@ const appObject = app || remote.app //Depends on process
 /// Data reported to server
 const machineId = require('node-machine-id').machineIdSync()
 const platform = process.platform.replace("darwin", "mac")
-
-//utils.isDevMode() ? '0.0.0' : 
-const version = appObject.getVersion()
+const version = utils.isDevMode() ? '0.0.0' : appObject.getVersion()
 const language = typeof navigator !== 'undefined' ? (navigator.language || navigator.userLanguage).substring(0,2) : null
 
 // All the stuff we'll need later globally
