@@ -64,18 +64,18 @@ module.exports = (app, options) => {
 			})
 
 			process.on('uncaughtException', err => {
-				trackError('uncaughtException', err)
+				this.trackError('uncaughtException', err)
 			})
 
 			process.on('unhandledRejection', err => {
-				trackError('unhandledRejection', err)
+				this.trackError('unhandledRejection', err)
 			})
 
 			// The rest is only for renderer process
 			if (!utils.isRenderer()) return
 
 			window.onerror = (message, file, line, col, err) => {
-				trackError('windowError', err)
+				this.trackError('windowError', err)
 			}
 
 			this.track('init')
@@ -136,6 +136,17 @@ module.exports = (app, options) => {
 		})
 	}
 
+	// Not arrow for this
+	module.trackError = function(type, err) {
+		// Convert Error to normal object, so we can stringify it
+		let errObject = {}
+		Object.getOwnPropertyNames(err).forEach(key => errObject[key] = err[key])
+
+		this.track('error:'+type, errObject)
+
+		if (typeof this.onError === 'function') this.onError(type, err)
+	}
+
 	module.getCustomData = (callback) => {
 
 		// If it's already cached, pull it from here
@@ -154,20 +165,6 @@ module.exports = (app, options) => {
 	return module
 
 }
-
-const trackError = (type, err) => {
-
-	// Convert Error to normal object, so we can stringify it
-	let errObject = {};
-	Object.getOwnPropertyNames(err).forEach(key => {
-		errObject[key] = err[key]
-	})
-
-	Nucleus.track(type, errObject)
-
-	if (typeof Nucleus.onError === 'function') Nucleus.onError(err, type)
-}
-
 
 const checkUpdates = () => {
 	let currentVersion = version

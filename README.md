@@ -47,7 +47,7 @@ Nucleus.track("PLAYED_TRACK")
 ```
 
 They are a couple events that are reserved by Nucleus:
-`init`, `windowError`, `uncaughtException` and `unhandledRejection`
+`init`, `error:*`
 
 You can't report these events.
 
@@ -70,13 +70,13 @@ Nucleus.checkLicense('SOME_LICENSE', (err, license) => {
 
 ### Errors
 
-Nucleus will report all `uncaughtException` and `unhandledRejection`.
+Nucleus will by default report all `uncaughtException` and `unhandledRejection`.
 
 If you'd like to act on these errors, for example show them to your user, quit the app or reload it, you can define an onError function, which will be called on errors happening on the respective process.
 
 
 ```javascript
-Nucleus.onError = (err, type) => {
+Nucleus.onError = (type, err) => {
 	console.error(err)
 	// type will either be uncaughtException, unhandledRejection or windowError
 }
@@ -84,6 +84,12 @@ Nucleus.onError = (err, type) => {
 
 
 `windowError` is an `uncaughtException` that happened in the rendered process. It was catched with `window.onerror`.
+
+If you'd like to report another type of error, you can do so with:
+
+```javascript
+Nucleus.trackError('weirdError', err)
+```
 
 
 ### Updates
