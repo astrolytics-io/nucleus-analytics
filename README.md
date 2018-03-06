@@ -1,5 +1,5 @@
 # electron-nucleus [![npm](https://img.shields.io/npm/v/electron-nucleus.svg)](https://www.npmjs.com/package/electron-nucleus)
-Analytics, licensing and crash reports made simple for Electron using [Nucleus](https://nucleus.sh).
+Analytics, licensing and bug reports made simple for Electron using [Nucleus](https://nucleus.sh).
 
 To start using this module you need to sign up and get an app id on the [Nucleus website](https://nucleus.sh). 
 
@@ -31,9 +31,10 @@ You can sign up and get an ID for your app [here](https://nucleus.sh).
 ### Options
 
 You can init Nucleus with options:
+
 ```javascript
 const Nucleus = require("electron-nucleus")("<Your App Id>", {
-	disableInDev: false, // if true, will disable module while in development
+	disableInDev: false, // disable module while in development (default: false)
 	userId: 'user@email.com', // Set a custom identifier for this User
 	version: '1.3.9', // Set a custom version
 	language: 'es' // Set a custom language
@@ -43,6 +44,7 @@ const Nucleus = require("electron-nucleus")("<Your App Id>", {
 Where options is an object, **where each property is optional**.
 
 **Note** : when running in development, the app version will be '0.0.0'
+
 
 ### Events
 
@@ -76,7 +78,7 @@ Nucleus.checkLicense('SOME_LICENSE', (err, license) => {
 
 ### Errors
 
-Nucleus will by default report all `uncaughtException` and `unhandledRejection`.
+Nucleus will by default report all `uncaughtException`, `unhandledRejection` and crashes using Electron's crash reporter.
 
 If you'd like to act on these errors, for example show them to your user, quit the app or reload it, you can define an onError function, which will be called on errors happening on the respective process.
 
@@ -89,7 +91,7 @@ Nucleus.onError = (type, err) => {
 ```
 
 
-`windowError` is an `uncaughtException` that happened in the rendered process. It was catched with `window.onerror`.
+`windowError` is an `uncaughtException` that happened in the renderer process. It was catched with `window.onerror`.
 
 If you'd like to report another type of error, you can do so with:
 
@@ -100,7 +102,7 @@ Nucleus.trackError('weirdError', err)
 
 ### Updates
 
-If Nucleus detects that the user is running a version inferior to the one set in your app settings (account section in the dashboard), it can call a function so you can alert the user (or something else).
+If the user is running a version inferior to the one set in your app settings (account section in the dashboard), it can call a function so you can alert the user (or something else).
 
 
 ```javascript
