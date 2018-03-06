@@ -225,7 +225,14 @@ const reportData = () => {
 
 const messageFromServer = (message) => {
 
-	let data = JSON.parse(message)
+	let data = {}
+	
+	try {
+		data = JSON.parse(message)
+	} catch (e) {
+		console.warn('Nucleus: could not parse message from server.')
+		console.warn(message)
+	}
 
 	if (data.customData) {
 		// Cache (or update cache) the custom data
@@ -239,7 +246,7 @@ const messageFromServer = (message) => {
 		checkUpdates()
 	}
 
-	if (data.confirmation === data.confirmation) {
+	if (data.confirmation === wsConfirmation) {
 		// Data was successfully reported, we can empty the queue (and save it)
 		queue = []
 		store.set('nucleus-queue', queue)
