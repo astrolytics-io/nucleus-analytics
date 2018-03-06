@@ -28,15 +28,21 @@ const Nucleus = require("electron-nucleus")("<Your App Id>")
 You can sign up and get an ID for your app [here](https://nucleus.sh).
 
 
-### Development Mode
+### Options
 
-If you want to track data during development, add *true* as the second argument of the init method.
-
+You can init Nucleus with options:
 ```javascript
-const Nucleus = require("electron-nucleus")("<Your App Id>", true)
+const Nucleus = require("electron-nucleus")("<Your App Id>", {
+	disableInDev: false, // if true, will disable module while in development
+	userId: 'user@email.com', // Set a custom identifier for this User
+	version: '1.3.9', // Set a custom version
+	language: 'es' // Set a custom language
+})
 ```
-**Note** : when running in development, depending on your env setup and location of the electron module, the app name and version can vary.
 
+Where options is an object, **where each property is optional**.
+
+**Note** : when running in development, the app version will be '0.0.0'
 
 ### Events
 
@@ -94,7 +100,7 @@ Nucleus.trackError('weirdError', err)
 
 ### Updates
 
-If Nucleus detects that the user is running a version inferior to the one set in your app settings, it can call a function so you can alert the user (or something else).
+If Nucleus detects that the user is running a version inferior to the one set in your app settings (account section in the dashboard), it can call a function so you can alert the user (or something else).
 
 
 ```javascript
@@ -103,10 +109,8 @@ Nucleus.onUpdate = (lastVersion) => {
 }
 ```
 
+**Note** : when running in development, the app version will be '0.0.0', so you can test this by setting a higher version in your dashboard
 
-### Custom metrics
-
-Coming soon.
 
 ---
 Contact **hello@nucleus.sh** for any inquiry

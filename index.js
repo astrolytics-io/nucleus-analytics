@@ -15,24 +15,26 @@ const utils = require('./utils.js')
 const appObject = remote ? remote.app : app //Depends on process
 
 /// Data reported to server
-const machineId = require('node-machine-id').machineIdSync()
-const platform = process.platform.replace("darwin", "mac")
-const version = utils.isDevMode() ? '0.0.0' : appObject.getVersion()
-const language = typeof navigator !== 'undefined' ? (navigator.language || navigator.userLanguage).substring(0,2) : null
+let userId = null
+let machineId = require('node-machine-id').machineIdSync()
+let platform = process.platform.replace("darwin", "mac")
+let version = utils.isDevMode() ? '0.0.0' : appObject.getVersion()
+let language = typeof navigator !== 'undefined' ? (navigator.language || navigator.userLanguage).substring(0,2) : null
 
 // All the stuff we'll need later globally
 let ws = null
 let wsConfirmation = null
+let appId = null
 let latestVersion = '0.0.0'
 let newUser = false
 let alertedUpdate = false
 let useInDev = false
-let appId = null
 let queue = []
 let cache = {}
 
-const apiUrl = "nucleus.sh"
-//const apiUrl = "localhost:5000" // Used in dev
+const dev = false // Internal use only, for developing with Nucleus dev
+
+const apiUrl = dev ? "localhost:5000" : "nucleus.sh"
 
 
 if (store.has('nucleus-cache')) cache = store.get('nucleus-cache')
@@ -41,29 +43,35 @@ if (store.has('nucleus-queue')) queue = store.get('nucleus-queue')
 else newUser = true
 
 
-module.exports = (app, options) => {
+module.exports = (appId, options = {}) => {
 
 	let module = {}
 
 	// not arrow for this
-	module.init = function(app, options) {
+	module.init = function(appId, options) {
 
 		if (typeof options === 'boolean') {
 			// Legacy, will soon not work anymore
 			useInDev = options
 		} else {
 			useInDev = !(options.disableInDev)
+
+			if (options.userId) userId = options.userId
+			if (options.version) version = options.version
+			if (options.language) language = options.language
 		}
 
-		if (app && (!utils.isDevMode() || useInDev)) {
-
-			appId = app
-
+		if (appId && (!utils.isDevMode() || useInDev)) {
+			
 			crashReporter.start({
 				productName: appId,
 				companyName: 'nucleus',
-				submitURL: `https://${apiUrl}/app/${appId}/crash`,
-				uploadToServer: true
+				submitURL: `http${dev ? '' : 's'}://${apiUrl}/app/${appId}/crash`,
+				uploadToServer: true,
+				extra: {
+					userId: userId,
+					version: version
+				}
 			})
 
 			process.on('uncaughtException', err => {
@@ -99,7 +107,8 @@ module.exports = (app, options) => {
 			queue.push({
 				event: eventName,
 				date: utils.getLocalTime(),
-				userId: machineId,
+				userId: userId,
+				machineId: machineId,
 				platform: platform,
 				version: version,
 				language: language,
@@ -128,13 +137,14 @@ module.exports = (app, options) => {
 		// Prepare license with needed data to be sent to server
 		let data = {
 			key: license.trim(),
+			userId: userId,
 			machineId: machineId,
 			platform: platform,
 			version: version
 		}
 
 		// Ask for the server to validate it
-		request({ url: `https://${apiUrl}/app/${appId}/license/validate`, method: 'POST', json: {data: data} }, (err, res, body) => {
+		request({ url: `http${dev ? '' : 's'}://${apiUrl}/app/${appId}/license/validate`, method: 'POST', json: {data: data} }, (err, res, body) => {
 			callback(err || body.error, body)
 		})
 	}
@@ -156,14 +166,14 @@ module.exports = (app, options) => {
 		if (cache.customData) return callback(null, cache.customData)
 
 		// Else go pull it on the server
-		request({ url: `https://${apiUrl}/app/${appId}/customdata`, method: 'GET', json: true }, (err, res, body) => {
+		request({ url: `http${dev ? '' : 's'}://${apiUrl}/app/${appId}/customdata`, method: 'GET', json: true }, (err, res, body) => {
 			callback(err || body.error, body)
 		})
 
 	}
 
 	// So it inits if we directly pass the app id
-	if (app) module.init(app, options) 
+	if (appId) module.init(appId, options) 
 
 	return module
 
@@ -206,7 +216,7 @@ const reportData = () => {
 	if (queue.length) {
 
 		if (!ws) {
-			ws = new WebSocket(`wss://${apiUrl}/app/${appId}/track`)
+			ws = new WebSocket(`ws${dev ? '' : 's'}://${apiUrl}/app/${appId}/track`)
 
 			// We are going to need to open this later
 			ws.on('error', _ => console.warn)
