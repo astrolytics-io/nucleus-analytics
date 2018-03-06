@@ -172,7 +172,7 @@ module.exports = (app, options) => {
 const checkUpdates = () => {
 	let currentVersion = version
 
-	let updateAvailable = !!(compareVersions(currentVersion, latestVersion) < 0)
+	let updateAvailable = !!(utils.compareVersions(currentVersion, latestVersion) < 0)
 
 	// We call 'onUpdate' if the user created this function
 	if (!alertedUpdate && updateAvailable && typeof Nucleus.onUpdate === 'function') {
