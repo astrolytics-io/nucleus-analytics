@@ -12,7 +12,7 @@ const store = new Store({
 
 const utils = require('./utils.js')
 
-const appObject = app || remote.app //Depends on process
+const appObject = remote ? remote.app : app //Depends on process
 
 /// Data reported to server
 const machineId = require('node-machine-id').machineIdSync()
