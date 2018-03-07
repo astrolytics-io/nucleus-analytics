@@ -43,12 +43,14 @@ if (store.has('nucleus-queue')) queue = store.get('nucleus-queue')
 else newUser = true
 
 
-module.exports = (appId, options = {}) => {
+module.exports = (initAppId, options = {}) => {
 
 	let module = {}
 
 	// not arrow for this
-	module.init = function(appId, options) {
+	module.init = function(initAppId, options) {
+
+		appId = initAppId
 
 		if (typeof options === 'boolean') {
 			// Legacy, will soon not work anymore
@@ -152,8 +154,10 @@ module.exports = (appId, options = {}) => {
 	// Not arrow for this
 	module.trackError = function(type, err) {
 		// Convert Error to normal object, so we can stringify it
-		let errObject = {}
-		Object.getOwnPropertyNames(err).forEach(key => errObject[key] = err[key])
+		let errObject = {
+			stack: err.stack,
+			message: err.message || err
+		}
 
 		this.track('error:'+type, errObject)
 
@@ -173,7 +177,7 @@ module.exports = (appId, options = {}) => {
 	}
 
 	// So it inits if we directly pass the app id
-	if (appId) module.init(appId, options) 
+	if (initAppId) module.init(initAppId, options) 
 
 	return module
 
@@ -216,6 +220,7 @@ const reportData = () => {
 	if (queue.length) {
 
 		if (!ws) {
+
 			ws = new WebSocket(`ws${dev ? '' : 's'}://${apiUrl}/app/${appId}/track`)
 
 			// We are going to need to open this later
