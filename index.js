@@ -12,7 +12,7 @@ const store = new Store({
 
 const utils = require('./utils.js')
 
-const appObject = remote ? remote.app : app //Depends on process
+const appObject = remote ? remote.app : app // Depends on process
 
 /// Data reported to server
 let userId = null
@@ -28,7 +28,7 @@ let appId = null
 let latestVersion = '0.0.0'
 let newUser = false
 let alertedUpdate = false
-let useInDev = false
+let useInDev = true
 let queue = []
 let cache = {}
 
@@ -47,7 +47,7 @@ module.exports = (initAppId, options = {}) => {
 
 	let module = {}
 
-	// not arrow for this
+	// not arrow function for access to this
 	module.init = function(initAppId, options) {
 
 		appId = initAppId
@@ -145,6 +145,7 @@ module.exports = (initAppId, options = {}) => {
 			version: version
 		}
 
+
 		// Ask for the server to validate it
 		request({ url: `http${dev ? '' : 's'}://${apiUrl}/app/${appId}/license/validate`, method: 'POST', json: {data: data} }, (err, res, body) => {
 			callback(err || body.error, body)
@@ -189,7 +190,7 @@ const checkUpdates = () => {
 	let updateAvailable = !!(utils.compareVersions(currentVersion, latestVersion) < 0)
 
 	// We call 'onUpdate' if the user created this function
-	if (!alertedUpdate && updateAvailable && typeof Nucleus.onUpdate === 'function') {
+	if (!alertedUpdate && updateAvailable && Nucleus && typeof Nucleus.onUpdate === 'function') {
 		// So we don't trigger it 1000 times
 		alertedUpdate = true
 
@@ -221,6 +222,7 @@ const reportData = () => {
 
 		if (!ws) {
 
+			// Wss (https equivalent) if production
 			ws = new WebSocket(`ws${dev ? '' : 's'}://${apiUrl}/app/${appId}/track`)
 
 			// We are going to need to open this later
