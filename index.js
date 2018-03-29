@@ -43,7 +43,7 @@ if (store.has('nucleus-queue')) queue = store.get('nucleus-queue')
 else newUser = true
 
 
-module.exports = (initAppId, options = {}) => {
+let Nucleus = (initAppId, options = {}) => {
 
 	let module = {}
 
@@ -270,3 +270,5 @@ const messageFromServer = (message) => {
 	}
 
 }
+
+module.exports = Nucleus
