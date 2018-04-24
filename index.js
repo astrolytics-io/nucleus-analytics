@@ -76,19 +76,23 @@ let Nucleus = (initAppId, options = {}) => {
 				}
 			})
 
-			process.on('uncaughtException', err => {
-				this.trackError('uncaughtException', err)
-			})
+			if (!options.disableErrorReports) {
+				process.on('uncaughtException', err => {
+					this.trackError('uncaughtException', err)
+				})
 
-			process.on('unhandledRejection', err => {
-				this.trackError('unhandledRejection', err)
-			})
+				process.on('unhandledRejection', err => {
+					this.trackError('unhandledRejection', err)
+				})
+			}
 
 			// The rest is only for renderer process
 			if (!utils.isRenderer()) return
 
-			window.onerror = (message, file, line, col, err) => {
-				this.trackError('windowError', err)
+			if (!options.disableErrorReports) {
+				window.onerror = (message, file, line, col, err) => {
+					this.trackError('windowError', err)
+				}
 			}
 
 			this.track('init')

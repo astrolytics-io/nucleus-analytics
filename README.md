@@ -37,7 +37,8 @@ const Nucleus = require("electron-nucleus")("<Your App Id>", {
 	disableInDev: false, // disable module while in development (default: false)
 	userId: 'user@email.com', // Set a custom identifier for this User
 	version: '1.3.9', // Set a custom version
-	language: 'es' // Set a custom language
+	language: 'es', // Set a custom language
+	disableErrorReports: false // disable errors reporting (default: false)
 })
 ```
 
