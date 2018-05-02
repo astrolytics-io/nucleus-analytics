@@ -169,6 +169,8 @@ let Nucleus = (initAppId, options = {}) => {
 		if (typeof this.onError === 'function') this.onError(type, err)
 	}
 
+
+	// Get the custom JSON data set from the dashboard
 	module.getCustomData = (callback) => {
 
 		// If it's already cached, pull it from here
@@ -180,6 +182,14 @@ let Nucleus = (initAppId, options = {}) => {
 		})
 
 	}
+
+	moduel.setUserId = (newId) => {
+		if (newId && newId.trim() !== '') {
+			userId = newId
+			return true
+		}
+	}  
+
 
 	// So it inits if we directly pass the app id
 	if (initAppId) module.init(initAppId, options) 
