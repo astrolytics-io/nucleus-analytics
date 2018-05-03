@@ -183,7 +183,7 @@ let Nucleus = (initAppId, options = {}) => {
 
 	}
 
-	moduel.setUserId = (newId) => {
+	module.setUserId = (newId) => {
 		if (newId && newId.trim() !== '') {
 			userId = newId
 			return true

@@ -100,6 +100,24 @@ If you'd like to report another type of error, you can do so with:
 Nucleus.trackError('weirdError', err)
 ```
 
+### Track specific users
+
+You can track specific users actions on the 'User Explorer' section of your dashboard.
+For that, you can supply an `userId` when initing the Nucleus module:
+
+```
+const Nucleus = require("electron-nucleus")("<Your App Id>", {
+	userId: 'someUniqueUserId'
+})
+```
+
+or, if you don't know it on start, you can add it later with:
+
+```
+Nucleus.setUserId('someUniqueUserId')
+```
+
+/!\ Be defining the user id after requiring Nucleus,
 
 ### Updates
 
