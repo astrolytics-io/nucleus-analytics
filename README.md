@@ -17,14 +17,18 @@ $ npm install electron-nucleus --save
 
 ## Usage
 
+Add Nucleus **in the renderer process**:
+
 In *both* renderer and main process add the following script:  
-If you don't add it to the main process, it won't be able to report crashes.
 
 
 ```javascript
 const Nucleus = require("electron-nucleus")("<Your App Id>")
 
 ```
+
+Also add it to the main process to make sure all crashes are reported.
+
 You can sign up and get an ID for your app [here](https://nucleus.sh).
 
 
@@ -55,10 +59,7 @@ After initializing Nucleus, you can send your own custom events.
 Nucleus.track("PLAYED_TRACK")
 ```
 
-They are a couple events that are reserved by Nucleus:
-`init`, `error:*`
-
-You can't report these events.
+They are a couple events that are reserved by Nucleus: `init`, `error:*` . You can't report events containing these strings.
 
 ### License checking
 
@@ -105,7 +106,7 @@ Nucleus.trackError('weirdError', err)
 You can track specific users actions on the 'User Explorer' section of your dashboard.
 For that, you can supply an `userId` when initing the Nucleus module:
 
-```
+```javascript
 const Nucleus = require("electron-nucleus")("<Your App Id>", {
 	userId: 'someUniqueUserId'
 })
@@ -113,11 +114,11 @@ const Nucleus = require("electron-nucleus")("<Your App Id>", {
 
 or, if you don't know it on start, you can add it later with:
 
-```
+```javascript
 Nucleus.setUserId('someUniqueUserId')
 ```
 
-/!\ Be defining the user id after requiring Nucleus,
+/!\ Be defining the user id after requiring Nucleus, the 'init' event (used to track app start)  won't be associated to your userId and the data about actual usage per user can differ.
 
 ### Updates
 
