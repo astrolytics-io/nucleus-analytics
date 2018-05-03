@@ -17,9 +17,7 @@ $ npm install electron-nucleus --save
 
 ## Usage
 
-Add Nucleus **in the renderer process**:
-
-In *both* renderer and main process add the following script:  
+Add the following code to import Nucleus **in the renderer process**:
 
 
 ```javascript
