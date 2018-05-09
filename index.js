@@ -34,7 +34,7 @@ let cache = {}
 
 let tempUserEvents = {}
 
-const dev = true // Internal use only, for developing with Nucleus dev
+const dev = false // Internal use only, for developing with Nucleus dev
 
 const apiUrl = dev ? "localhost:5000" : "nucleus.sh"
 
