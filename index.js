@@ -106,7 +106,7 @@ let Nucleus = (initAppId, options = {}) => {
 		
 	}
 
-	module.track = (eventName, payload = null) => {
+	module.track = (eventName, options = {}) => {
 
 		if (eventName && (!utils.isDevMode() || useInDev)) {
 
@@ -118,7 +118,7 @@ let Nucleus = (initAppId, options = {}) => {
 				platform: platform,
 				version: version,
 				language: language,
-				payload: payload,
+				payload: options.payload || null,
 				process: utils.isRenderer() ? 'renderer' : 'main'
 			})
 
@@ -164,7 +164,9 @@ let Nucleus = (initAppId, options = {}) => {
 			message: err.message || err
 		}
 
-		this.track('error:'+type, errObject)
+		this.track('error:'+type, {
+			payload: errObject
+		})
 
 		if (typeof this.onError === 'function') this.onError(type, err)
 	}

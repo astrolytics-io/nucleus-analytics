@@ -1,6 +1,6 @@
 {
   "name": "electron-nucleus",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "Analytics, licensing and crash reports for Electron",
   "main": "index.js",
   "repository": {
@@ -21,8 +21,8 @@
   "homepage": "https://nucleus.sh",
   "dependencies": {
     "electron-store": "^1.3.0",
-    "node-machine-id": "^1.1.9",
-    "request": "^2.83.0",
-    "ws": "^4.0.0"
+    "node-machine-id": "^1.1.10",
+    "request": "^2.85.0",
+    "ws": "^5.1.1"
   }
 }
