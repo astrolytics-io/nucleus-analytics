@@ -32,7 +32,9 @@ let useInDev = true
 let queue = []
 let cache = {}
 
-const dev = false // Internal use only, for developing with Nucleus dev
+let tempUserEvents = {}
+
+const dev = true // Internal use only, for developing with Nucleus dev
 
 const apiUrl = dev ? "localhost:5000" : "nucleus.sh"
 
@@ -108,25 +110,36 @@ let Nucleus = (initAppId, options = {}) => {
 
 	module.track = (eventName, options = {}) => {
 
-		if (eventName && (!utils.isDevMode() || useInDev)) {
+		if (!eventName || (utils.isDevMode() && !useInDev)) return
 
-			queue.push({
-				event: eventName,
-				date: utils.getLocalTime(),
-				userId: userId,
-				machineId: machineId,
-				platform: platform,
-				version: version,
-				language: language,
-				payload: options.payload || null,
-				process: utils.isRenderer() ? 'renderer' : 'main'
-			})
+		// If we want the event to only be reportable once per user
+		if (userId && options.uniqueToUser) {
+			if (tempUserEvents[userId]) {
 
-			store.set('queue', queue)
-
-			reportData()
-
+				if (tempUserEvents[userId].includes(eventName)) return // We already tracked this event
+				else tempUserEvents[userId].push(eventName)
+			
+			} else {
+				tempUserEvents[userId] = [eventName]
+			}
 		}
+
+		queue.push({
+			event: eventName,
+			date: utils.getLocalTime(),
+			userId: userId,
+			machineId: machineId,
+			platform: platform,
+			version: version,
+			language: language,
+			payload: options.payload || null,
+			process: utils.isRenderer() ? 'renderer' : 'main'
+		})
+
+		store.set('queue', queue)
+
+		reportData()
+
 
 	}
 
