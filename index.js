@@ -127,11 +127,13 @@ let Nucleus = (initAppId, options = {}) => {
 		queue.push({
 			event: eventName,
 			date: utils.getLocalTime(),
+			appId: appId,
 			userId: userId,
 			machineId: machineId,
 			platform: platform,
 			version: version,
 			language: language,
+			uniqueToUser: options.uniqueToUser,
 			payload: options.payload || null,
 			process: utils.isRenderer() ? 'renderer' : 'main'
 		})
