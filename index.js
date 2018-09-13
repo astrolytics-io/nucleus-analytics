@@ -14,6 +14,8 @@ const utils = require('./utils.js')
 
 const appObject = remote ? remote.app : app // Depends on process
 
+const moduleVersion = require('./package.json').version
+
 /// Data reported to server
 let userId = null
 let machineId = require('node-machine-id').machineIdSync()
@@ -135,7 +137,8 @@ let Nucleus = (initAppId, options = {}) => {
 			language: language,
 			uniqueToUser: options.uniqueToUser,
 			payload: options.payload || null,
-			process: utils.isRenderer() ? 'renderer' : 'main'
+			process: utils.isRenderer() ? 'renderer' : 'main',
+			moduleVersion: moduleVersion
 		})
 
 		store.set('queue', queue)
