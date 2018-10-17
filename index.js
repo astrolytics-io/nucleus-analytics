@@ -22,6 +22,7 @@ let machineId = require('node-machine-id').machineIdSync()
 let platform = process.platform.replace("darwin", "mac")
 let version = utils.isDevMode() ? '0.0.0' : appObject.getVersion()
 let language = typeof navigator !== 'undefined' ? (navigator.language || navigator.userLanguage).substring(0,2) : null
+let arch = process.arch
 
 // All the stuff we'll need later globally
 let ws = null
@@ -36,7 +37,7 @@ let cache = {}
 
 let tempUserEvents = {}
 
-const dev = false // Internal use only, for developing with Nucleus dev
+const dev = true // Internal use only, for developing with Nucleus dev
 
 const apiUrl = dev ? "localhost:5000" : "nucleus.sh"
 
@@ -136,6 +137,7 @@ let Nucleus = (initAppId, options = {}) => {
 			version: version,
 			language: language,
 			uniqueToUser: options.uniqueToUser,
+			arch: arch,
 			payload: options.payload || null,
 			process: utils.isRenderer() ? 'renderer' : 'main',
 			moduleVersion: moduleVersion

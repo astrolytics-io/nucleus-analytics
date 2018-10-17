@@ -1,6 +1,6 @@
 {
   "name": "electron-nucleus",
-  "version": "1.9.1",
+  "version": "1.9.2",
   "description": "Analytics, licensing and crash reports for Electron",
   "main": "index.js",
   "repository": {
