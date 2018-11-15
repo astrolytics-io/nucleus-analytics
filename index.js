@@ -2,6 +2,7 @@
 
 const {remote, app, crashReporter} = require('electron')
 const request = require('request')
+const os = require('os')
 const WebSocket = require('ws')
 
 const Store = require('electron-store')
@@ -23,8 +24,14 @@ let platform = process.platform.replace("darwin", "mac")
 let version = utils.isDevMode() ? '0.0.0' : appObject.getVersion()
 let language = typeof navigator !== 'undefined' ? (navigator.language || navigator.userLanguage).substring(0,2) : null
 let arch = process.arch
+let sessionId = null
+let osVersion = os.release()
+let totalRam = os.totalmem() / Math.pow(1024, 3)
 
 // All the stuff we'll need later globally
+let dev = false // Internal use only, for developing with Nucleus dev
+let apiUrl = "nucleus.sh"
+
 let ws = null
 let wsConfirmation = null
 let appId = null
@@ -37,9 +44,6 @@ let cache = {}
 
 let tempUserEvents = {}
 
-const dev = false // Internal use only, for developing with Nucleus dev
-
-const apiUrl = dev ? "localhost:5000" : "nucleus.sh"
 
 
 if (store.has('nucleus-cache')) cache = store.get('nucleus-cache')
@@ -66,7 +70,12 @@ let Nucleus = (initAppId, options = {}) => {
 			if (options.userId) userId = options.userId
 			if (options.version) version = options.version
 			if (options.language) language = options.language
+			if (options.endpoint) apiUrl = options.endpoint
+			if (options.devMode) dev = options.devMode
 		}
+
+		sessionId = Math.floor(Math.random() * 1e4) + 1
+
 
 		if (appId && (!utils.isDevMode() || useInDev)) {
 			
@@ -128,12 +137,16 @@ let Nucleus = (initAppId, options = {}) => {
 		}
 
 		queue.push({
+			appType: 'electron',
 			event: eventName,
 			date: utils.getLocalTime(),
 			appId: appId,
 			userId: userId,
+			sessionId: sessionId,
 			machineId: machineId,
 			platform: platform,
+			osVersion: osVersion,
+			totalRam: totalRam,
 			version: version,
 			language: language,
 			uniqueToUser: options.uniqueToUser,
@@ -234,46 +247,57 @@ const checkUpdates = () => {
 	}
 } 
 
+
+const sendQueue = () => {
+
+	console.log('Sending queue.')
+
+	// Connection not opened?
+	if (!ws || ws.readyState !== WebSocket.OPEN) return
+
+	console.log('WS is ready.')
+
+
+	// Send an unique random token with it to check if server successfully got it
+	wsConfirmation = Math.random().toString()
+
+	let payload = {
+		confirmation: wsConfirmation,
+		data: queue
+	}
+
+	ws.send(JSON.stringify(payload))
+}
+
+
 // Try to report the data to the server
 const reportData = () => {
 
-	const send = () => {
+	console.warn('Reporting data.')
+	console.warn(queue)
 
-		// Connection not opened?
-		if (!ws || ws.readyState !== WebSocket.OPEN) return
+	// Nothing to report
+	if (!queue.length) return
 
-		// Send an unique random token with it to check if server successfully got it
-		wsConfirmation = Math.random().toString()
+	if (!ws || ws.readyState !== WebSocket.OPEN) {
 
-		let payload = {
-			confirmation: wsConfirmation,
-			data: queue
-		}
+		console.warn('No connection to server. Opening it.')
 
-		ws.send(JSON.stringify(payload))
+		// Wss (https equivalent) if production
+		ws = new WebSocket(`ws${dev ? '' : 's'}://${apiUrl}/app/${appId}/track`)
+
+		// We are going to need to open this later
+		ws.on('error', _ => console.warn)
+		ws.on('close', _ => console.warn)
+
+		ws.on('message', messageFromServer)
+
+		ws.on('open', sendQueue )
+
+	} else {
+		sendQueue()
 	}
 
-
-	if (queue.length) {
-
-		if (!ws) {
-
-			// Wss (https equivalent) if production
-			ws = new WebSocket(`ws${dev ? '' : 's'}://${apiUrl}/app/${appId}/track`)
-
-			// We are going to need to open this later
-			ws.on('error', _ => console.warn)
-			ws.on('close', _ => console.warn)
-
-			ws.on('message', messageFromServer)
-
-			ws.on('open', send )
-
-		} else {
-			send()
-		}
-
-	}
 }
 
 const messageFromServer = (message) => {
@@ -285,6 +309,7 @@ const messageFromServer = (message) => {
 	} catch (e) {
 		console.warn('Nucleus: could not parse message from server.')
 		console.warn(message)
+		return
 	}
 
 	if (data.customData) {
@@ -300,7 +325,7 @@ const messageFromServer = (message) => {
 	}
 
 	if (data.confirmation === wsConfirmation) {
-		// Data was successfully reported, we can empty the queue (and save it)
+		// Data was successfully reported, we can empty the queue
 		queue = []
 		store.set('nucleus-queue', queue)
 	}
