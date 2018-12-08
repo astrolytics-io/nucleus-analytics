@@ -39,12 +39,11 @@ let latestVersion = '0.0.0'
 let newUser = false
 let alertedUpdate = false
 let useInDev = true
+let enableLogs = false
 let queue = []
 let cache = {}
 
 let tempUserEvents = {}
-
-
 
 if (store.has('nucleus-cache')) cache = store.get('nucleus-cache')
 
@@ -72,6 +71,7 @@ let Nucleus = (initAppId, options = {}) => {
 			if (options.language) language = options.language
 			if (options.endpoint) apiUrl = options.endpoint
 			if (options.devMode) dev = options.devMode
+			if (options.enableLogs) enableLogs = options.enableLogs
 		}
 
 		sessionId = Math.floor(Math.random() * 1e4) + 1
@@ -124,12 +124,17 @@ let Nucleus = (initAppId, options = {}) => {
 
 		if (!eventName || (utils.isDevMode() && !useInDev)) return
 
+		if (enableLogs) console.log('Nucleus: tracking event '+eventName)
+
 		// If we want the event to only be reportable once per user
 		if (userId && options.uniqueToUser) {
 			if (tempUserEvents[userId]) {
 
-				if (tempUserEvents[userId].includes(eventName)) return // We already tracked this event
-				else tempUserEvents[userId].push(eventName)
+				if (tempUserEvents[userId].includes(eventName)) {
+					return // We already tracked this event
+				} else {
+					tempUserEvents[userId].push(eventName)
+				}
 			
 			} else {
 				tempUserEvents[userId] = [eventName]
@@ -220,6 +225,7 @@ let Nucleus = (initAppId, options = {}) => {
 
 	module.setUserId = (newId) => {
 		if (newId && newId.trim() !== '') {
+			if (enableLogs) console.log('Nucleus: user id set to '+newId)
 			userId = newId
 			return true
 		}
@@ -250,13 +256,8 @@ const checkUpdates = () => {
 
 const sendQueue = () => {
 
-	console.log('Sending queue.')
-
 	// Connection not opened?
 	if (!ws || ws.readyState !== WebSocket.OPEN) return
-
-	console.log('WS is ready.')
-
 
 	// Send an unique random token with it to check if server successfully got it
 	wsConfirmation = Math.random().toString()
@@ -273,15 +274,12 @@ const sendQueue = () => {
 // Try to report the data to the server
 const reportData = () => {
 
-	console.warn('Reporting data.')
-	console.warn(queue)
-
 	// Nothing to report
 	if (!queue.length) return
 
 	if (!ws || ws.readyState !== WebSocket.OPEN) {
 
-		console.warn('No connection to server. Opening it.')
+		if (enableLogs) console.warn('Nucleus: no connection to server. Opening it.')
 
 		// Wss (https equivalent) if production
 		ws = new WebSocket(`ws${dev ? '' : 's'}://${apiUrl}/app/${appId}/track`)
@@ -307,8 +305,7 @@ const messageFromServer = (message) => {
 	try {
 		data = JSON.parse(message)
 	} catch (e) {
-		console.warn('Nucleus: could not parse message from server.')
-		console.warn(message)
+		if (enableLogs) console.warn('Nucleus: could not parse message from server.')
 		return
 	}
 

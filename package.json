@@ -1,6 +1,6 @@
 {
   "name": "electron-nucleus",
-  "version": "1.10.0",
+  "version": "1.11.0",
   "description": "Analytics, licensing and crash reports for Electron",
   "main": "index.js",
   "repository": {
@@ -13,7 +13,7 @@
     "crash",
     "electron"
   ],
-  "author": "Vincent L.",
+  "author": "Lyser.io",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/vincelwt/electron-nucleus/issues"
