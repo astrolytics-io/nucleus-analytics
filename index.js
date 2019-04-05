@@ -40,6 +40,7 @@ let newUser = false
 let alertedUpdate = false
 let useInDev = true
 let enableLogs = false
+let disableTracking = false
 let queue = []
 let cache = {}
 
@@ -72,6 +73,7 @@ let Nucleus = (initAppId, options = {}) => {
 			if (options.endpoint) apiUrl = options.endpoint
 			if (options.devMode) dev = options.devMode
 			if (options.enableLogs) enableLogs = options.enableLogs
+			if (options.disableTracking) disableTracking = options.disableTracking
 		}
 
 		sessionId = Math.floor(Math.random() * 1e4) + 1
@@ -101,15 +103,18 @@ let Nucleus = (initAppId, options = {}) => {
 			}
 
 			// The rest is only for renderer process
-			if (!utils.isRenderer()) return
+			if (!utils.isRenderer()) {
+				if (options.onlyMainProcess) this.track('init')
+				return
+			}
+
+			this.track('init')
 
 			if (!options.disableErrorReports) {
 				window.onerror = (message, file, line, col, err) => {
 					this.trackError('windowError', err)
 				}
 			}
-
-			this.track('init')
 
 			// Automatically send data when back online
 			window.addEventListener('online', _ => {
@@ -122,7 +127,7 @@ let Nucleus = (initAppId, options = {}) => {
 
 	module.track = (eventName, options = {}) => {
 
-		if (!eventName || (utils.isDevMode() && !useInDev)) return
+		if (!eventName || disableTracking || (utils.isDevMode() && !useInDev)) return
 
 		if (enableLogs) console.log('Nucleus: tracking event '+eventName)
 
@@ -165,7 +170,6 @@ let Nucleus = (initAppId, options = {}) => {
 
 		reportData()
 
-
 	}
 
 	module.checkLicense = (license, callback) => {
@@ -198,7 +202,7 @@ let Nucleus = (initAppId, options = {}) => {
 	module.trackError = function(type, err) {
 		// Convert Error to normal object, so we can stringify it
 		let errObject = {
-			stack: err.stack,
+			stack: err.stack || err,
 			message: err.message || err
 		}
 
@@ -229,8 +233,19 @@ let Nucleus = (initAppId, options = {}) => {
 			userId = newId
 			return true
 		}
-	}  
+	}
 
+	module.disableTracking = () => {
+		if (enableLogs) console.warn('Nucleus: tracking disabled')
+
+		disableTracking = true
+	}
+
+	module.enableTracking = () => {
+		if (enableLogs) console.warn('Nucleus: tracking enabled')
+		
+		disableTracking = false
+	}
 
 	// So it inits if we directly pass the app id
 	if (initAppId) module.init(initAppId, options) 

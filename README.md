@@ -1,7 +1,7 @@
 # electron-nucleus [![npm](https://img.shields.io/npm/v/electron-nucleus.svg)](https://www.npmjs.com/package/electron-nucleus)
 Analytics, licensing and bug reports made simple for Electron using [Nucleus](https://nucleus.sh).
 
-To start using this module you need to sign up and get an app id on the [Nucleus website](https://nucleus.sh). 
+To start using this module, sign up and get an app ID on the [Nucleus website](https://nucleus.sh). 
 
 This module is mainly working on the renderer process, but needs to be initiated in the main process for crash reports.
 
@@ -13,7 +13,6 @@ Using npm:
 ```bash
 $ npm install electron-nucleus --save
 ```
-
 
 ## Usage
 
@@ -27,6 +26,8 @@ const Nucleus = require("electron-nucleus")("<Your App Id>")
 
 Also add it to the main process to make sure all crashes are reported.
 
+If you are only able to use Nucleus in the main process, you can use the `onlyMainProcess` option.
+
 You can sign up and get an ID for your app [here](https://nucleus.sh).
 
 
@@ -37,12 +38,16 @@ You can init Nucleus with options:
 ```javascript
 const Nucleus = require("electron-nucleus")("<Your App Id>", {
 	disableInDev: false, // disable module while in development (default: false)
-	userId: 'user@email.com', // Set a custom identifier for this User
-	version: '1.3.9', // Set a custom version
-	language: 'es', // Set a custom language
-	disableErrorReports: false // disable errors reporting (default: false)
+	disableTracking: false, // Completely disable tracking
+	onlyMainProcess: false, // If you can only use Nucleus in the mainprocess
+	disableErrorReports: false, // disable errors reporting (default: false)
+	userId: 'user@email.com', // Set an identifier for this user
+	version: '1.3.9', // Set a custom version for your app (default: autodetected)
+	language: 'es' // Specify a custom language (default: autodetected)
 })
 ```
+
+By default **version**, **language** and **country** are autodetected but you can overwrite them.
 
 Where options is an object, **where each property is optional**.
 
@@ -58,6 +63,63 @@ Nucleus.track("PLAYED_TRACK")
 ```
 
 They are a couple events that are reserved by Nucleus: `init`, `error:*` . You can't report events containing these strings.
+
+<!-- 
+### Tracking with properties
+
+Optionially, you can add extra information to your tracked events.
+
+Properties can either **numbers**, **strings** or **booleans**. No nested properties or arrays.
+
+Example
+
+```javascript
+Nucleus.track("PLAYED_TRACK", {
+	trackName: 'My Awesome Song'
+})
+``` -->
+
+### Disable tracking
+
+To opt out your users from tracking, you can use the following methods:
+
+```javascript
+Nucleus.disableTracking()
+```
+
+and to opt back in:
+
+```javascript
+Nucleus.enableTracking()
+```
+
+This change won't persist after restarts so you have to handle this logic.
+
+You can also supply a `disableTracking: true` option to the module on start if you want to directly prevent tracking.
+
+
+### Identify your users
+
+You can track specific users actions on the 'User Explorer' section of your dashboard.
+
+For that, you can supply an `userId` when initing the Nucleus module.
+
+It can be you own generated ID, their email, username... etc.
+
+```javascript
+const Nucleus = require("electron-nucleus")("<Your App Id>", {
+	userId: 'someUniqueUserId'
+})
+```
+
+or, if you don't know it on start, you can add it later with:
+
+```javascript
+Nucleus.setUserId('someUniqueUserId')
+```
+
+/!\ Be defining the user id after requiring Nucleus, the 'init' event (used to track app start)  won't be associated to your userId and the data about actual usage per user can differ.
+
 
 ### License checking
 
@@ -98,25 +160,6 @@ If you'd like to report another type of error, you can do so with:
 ```javascript
 Nucleus.trackError('weirdError', err)
 ```
-
-### Track specific users
-
-You can track specific users actions on the 'User Explorer' section of your dashboard.
-For that, you can supply an `userId` when initing the Nucleus module:
-
-```javascript
-const Nucleus = require("electron-nucleus")("<Your App Id>", {
-	userId: 'someUniqueUserId'
-})
-```
-
-or, if you don't know it on start, you can add it later with:
-
-```javascript
-Nucleus.setUserId('someUniqueUserId')
-```
-
-/!\ Be defining the user id after requiring Nucleus, the 'init' event (used to track app start)  won't be associated to your userId and the data about actual usage per user can differ.
 
 ### Updates
 

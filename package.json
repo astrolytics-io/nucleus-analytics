@@ -1,11 +1,11 @@
 {
   "name": "electron-nucleus",
-  "version": "1.11.2",
+  "version": "1.12.0",
   "description": "Analytics, licensing and crash reports for Electron",
   "main": "index.js",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/vincelwt/electron-nucleus.git"
+    "url": "git+https://github.com/lyserio/electron-nucleus.git"
   },
   "keywords": [
     "analytics",
@@ -16,7 +16,7 @@
   "author": "Lyser.io",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/vincelwt/electron-nucleus/issues"
+    "url": "https://github.com/lyserio/electron-nucleus/issues"
   },
   "homepage": "https://nucleus.sh",
   "dependencies": {
