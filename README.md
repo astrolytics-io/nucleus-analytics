@@ -3,7 +3,7 @@ Analytics, licensing and bug reports made simple for Electron using [Nucleus](ht
 
 To start using this module, sign up and get an app ID on the [Nucleus website](https://nucleus.sh). 
 
-This module is mainly working on the renderer process, but needs to be initiated in the main process for crash reports.
+This module is mainly working on the renderer process but should be initiated in the main process for crash reports.
 
 
 ## Installation
@@ -21,7 +21,6 @@ Add the following code to import Nucleus **in the renderer process**:
 
 ```javascript
 const Nucleus = require("electron-nucleus")("<Your App Id>")
-
 ```
 
 Also add it to the main process to make sure all crashes are reported.
