@@ -125,14 +125,14 @@ let Nucleus = (initAppId, options = {}) => {
 		
 	}
 
-	module.track = (eventName, options = {}) => {
+	module.track = (eventName, options) => {
 
 		if (!eventName || disableTracking || (utils.isDevMode() && !useInDev)) return
 
 		if (enableLogs) console.log('Nucleus: reporting event '+eventName)
 
 		// If we want the event to only be reportable once per user
-		if (userId && options.uniqueToUser) {
+		if (options && userId && options.uniqueToUser) {
 			if (tempUserEvents[userId]) {
 
 				if (tempUserEvents[userId].includes(eventName)) {
@@ -144,6 +144,10 @@ let Nucleus = (initAppId, options = {}) => {
 			} else {
 				tempUserEvents[userId] = [eventName]
 			}
+		}
+
+		if (options) {
+			var payload = (typeof options === 'object') ? options.payload : options
 		}
 
 		queue.push({
@@ -161,7 +165,7 @@ let Nucleus = (initAppId, options = {}) => {
 			language: language,
 			uniqueToUser: options.uniqueToUser,
 			arch: arch,
-			payload: options.payload || null,
+			payload: payload || null,
 			process: utils.isRenderer() ? 'renderer' : 'main',
 			moduleVersion: moduleVersion
 		})

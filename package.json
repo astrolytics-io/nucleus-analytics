@@ -1,7 +1,7 @@
 {
   "name": "electron-nucleus",
-  "version": "1.12.1",
-  "description": "Analytics, licensing and crash reports for Electron",
+  "version": "1.13.0",
+  "description": "Analytics and bug reports for Electron.",
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -11,6 +11,7 @@
     "analytics",
     "licensing",
     "crash",
+    "bugs",
     "electron"
   ],
   "author": "Lyser.io",
