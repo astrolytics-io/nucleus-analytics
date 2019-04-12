@@ -129,7 +129,7 @@ let Nucleus = (initAppId, options = {}) => {
 
 		if (!eventName || disableTracking || (utils.isDevMode() && !useInDev)) return
 
-		if (enableLogs) console.log('Nucleus: tracking event '+eventName)
+		if (enableLogs) console.log('Nucleus: reporting event '+eventName)
 
 		// If we want the event to only be reportable once per user
 		if (userId && options.uniqueToUser) {
@@ -172,6 +172,8 @@ let Nucleus = (initAppId, options = {}) => {
 
 	}
 
+	// DEPRECATED
+	// Licensing integration in Nucleus
 	module.checkLicense = (license, callback) => {
 
 		// No license was supplied
@@ -227,22 +229,26 @@ let Nucleus = (initAppId, options = {}) => {
 
 	}
 
-	module.setUserId = (newId) => {
-		if (newId && newId.trim() !== '') {
-			if (enableLogs) console.log('Nucleus: user id set to '+newId)
-			userId = newId
-			return true
-		}
+	module.setUserId = function(newId) {
+		if (!newId || newId.trim() === '') return false
+		
+		if (enableLogs) console.log('Nucleus: user id set to '+newId)
+		
+		userId = newId
+		
+		this.track('nucleus:beacon') // So we can know what the specs of this user
+		
+		return true
 	}
 
 	module.disableTracking = () => {
-		if (enableLogs) console.warn('Nucleus: tracking disabled')
+		if (enableLogs) console.log('Nucleus: tracking disabled')
 
 		disableTracking = true
 	}
 
 	module.enableTracking = () => {
-		if (enableLogs) console.warn('Nucleus: tracking enabled')
+		if (enableLogs) console.log('Nucleus: tracking enabled')
 		
 		disableTracking = false
 	}
