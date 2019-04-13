@@ -132,19 +132,19 @@ let Nucleus = (initAppId, options = {}) => {
 		if (enableLogs) console.log('Nucleus: reporting event '+eventName)
 
 		// If we want the event to only be reportable once per user
-		if (options && userId && options.uniqueToUser) {
-			if (tempUserEvents[userId]) {
+		// if (options && userId && options.uniqueToUser) {
+		// 	if (tempUserEvents[userId]) {
 
-				if (tempUserEvents[userId].includes(eventName)) {
-					return // We already tracked this event
-				} else {
-					tempUserEvents[userId].push(eventName)
-				}
+		// 		if (tempUserEvents[userId].includes(eventName)) {
+		// 			return // We already tracked this event
+		// 		} else {
+		// 			tempUserEvents[userId].push(eventName)
+		// 		}
 			
-			} else {
-				tempUserEvents[userId] = [eventName]
-			}
-		}
+		// 	} else {
+		// 		tempUserEvents[userId] = [eventName]
+		// 	}
+		// }
 
 		if (options) {
 			var payload = (typeof options === 'object') ? options.payload : options
@@ -163,7 +163,7 @@ let Nucleus = (initAppId, options = {}) => {
 			totalRam: totalRam,
 			version: version,
 			language: language,
-			uniqueToUser: options.uniqueToUser,
+			// uniqueToUser: options ? options.uniqueToUser : null
 			arch: arch,
 			payload: payload || null,
 			process: utils.isRenderer() ? 'renderer' : 'main',
