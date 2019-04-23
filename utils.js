@@ -14,7 +14,7 @@ module.exports = {
 	},
 	getLocalTime: () => {
 		let accessTime = new Date()
-		return new Date(accessTime.getTime()- accessTime.getTimezoneOffset()*60000)
+		return new Date(accessTime.getTime() - accessTime.getTimezoneOffset()*60000)
 	},
 	compareVersions (a, b) {
 		var i, diff

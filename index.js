@@ -1,6 +1,6 @@
 'use strict';
 
-const {remote, app, crashReporter} = require('electron')
+const { remote, app } = require('electron')
 const request = require('request')
 const os = require('os')
 const WebSocket = require('ws')
@@ -30,7 +30,7 @@ let totalRam = os.totalmem() / Math.pow(1024, 3)
 
 // All the stuff we'll need later globally
 let dev = false // Internal use only, for developing with Nucleus dev
-let apiUrl = "nucleus.sh"
+let apiUrl = "app.nucleus.sh"
 
 let ws = null
 let wsConfirmation = null
@@ -43,6 +43,7 @@ let enableLogs = false
 let disableTracking = false
 let queue = []
 let cache = {}
+let reportDelay = 20
 
 let tempUserEvents = {}
 
@@ -57,40 +58,24 @@ let Nucleus = (initAppId, options = {}) => {
 	let module = {}
 
 	// not arrow function for access to this
-	module.init = function(initAppId, options) {
+	module.init = function(initAppId, options = {}) {
 
 		appId = initAppId
 
-		if (typeof options === 'boolean') {
-			// Legacy, will soon not work anymore
-			useInDev = options
-		} else {
-			useInDev = !(options.disableInDev)
+		useInDev = !(options.disableInDev)
 
-			if (options.userId) userId = options.userId
-			if (options.version) version = options.version
-			if (options.language) language = options.language
-			if (options.endpoint) apiUrl = options.endpoint
-			if (options.devMode) dev = options.devMode
-			if (options.enableLogs) enableLogs = options.enableLogs
-			if (options.disableTracking) disableTracking = options.disableTracking
-		}
+		if (options.userId) userId = options.userId
+		if (options.version) version = options.version
+		if (options.language) language = options.language
+		if (options.endpoint) apiUrl = options.endpoint
+		if (options.devMode) dev = options.devMode
+		if (options.enableLogs) enableLogs = options.enableLogs
+		if (options.disableTracking) disableTracking = options.disableTracking
+		if (options.reportDelay) reportDelay = options.reportDelay
 
 		sessionId = Math.floor(Math.random() * 1e4) + 1
 
-
 		if (appId && (!utils.isDevMode() || useInDev)) {
-			
-			crashReporter.start({
-				productName: appId,
-				companyName: 'nucleus',
-				submitURL: `http${dev ? '' : 's'}://${apiUrl}/app/${appId}/crash`,
-				uploadToServer: true,
-				extra: {
-					userId: userId,
-					version: version
-				}
-			})
 
 			if (!options.disableErrorReports) {
 				process.on('uncaughtException', err => {
@@ -109,6 +94,7 @@ let Nucleus = (initAppId, options = {}) => {
 			}
 
 			this.track('init')
+			reportData()
 
 			if (!options.disableErrorReports) {
 				window.onerror = (message, file, line, col, err) => {
@@ -118,62 +104,64 @@ let Nucleus = (initAppId, options = {}) => {
 
 			// Automatically send data when back online
 			window.addEventListener('online', _ => {
+				
 				reportData()
+
 			})
+
+			// Make sure we stay in sync
+			// Keeps live list of users updated too
+			setInterval(() => {
+				
+				reportData()
+
+			}, reportDelay * 1000)
 
 		}
 		
 	}
 
-	module.track = (eventName, options) => {
+
+	module.track = (eventName, data) => {
 
 		if (!eventName || disableTracking || (utils.isDevMode() && !useInDev)) return
 
-		if (enableLogs) console.log('Nucleus: reporting event '+eventName)
+		if (enableLogs) console.log('Nucleus: adding to reporting queue event '+eventName)
 
-		// If we want the event to only be reportable once per user
-		// if (options && userId && options.uniqueToUser) {
-		// 	if (tempUserEvents[userId]) {
-
-		// 		if (tempUserEvents[userId].includes(eventName)) {
-		// 			return // We already tracked this event
-		// 		} else {
-		// 			tempUserEvents[userId].push(eventName)
-		// 		}
-			
-		// 	} else {
-		// 		tempUserEvents[userId] = [eventName]
-		// 	}
-		// }
-
-		if (options) {
-			var payload = (typeof options === 'object') ? options.payload : options
-		}
-
-		queue.push({
-			appType: 'electron',
+		let eventData = {
 			event: eventName,
 			date: utils.getLocalTime(),
 			appId: appId,
 			userId: userId,
-			sessionId: sessionId,
 			machineId: machineId,
+			sessionId: sessionId,
+			payload: data || undefined
+		}
+
+		let extra = {
 			platform: platform,
 			osVersion: osVersion,
 			totalRam: totalRam,
 			version: version,
 			language: language,
-			// uniqueToUser: options ? options.uniqueToUser : null
-			arch: arch,
-			payload: payload || null,
 			process: utils.isRenderer() ? 'renderer' : 'main',
+			arch: arch,
 			moduleVersion: moduleVersion
-		})
+		}
+
+		// So we don't send unnecessary data with every events
+		// Only when needed (= first opening, after reporting user and on error)
+		if (['init', 'nucleus:beacon'].includes(eventName) || eventName.includes("error:")) {
+			Object.keys(extra).forEach((key) => eventData[key] = extra[key] )
+		}
+
+		queue.push(eventData)
 
 		store.set('queue', queue)
+	}
 
-		reportData()
-
+	module.setProps = function(props) {
+		this.track('nucleus:props', props)
 	}
 
 	// DEPRECATED
@@ -212,9 +200,7 @@ let Nucleus = (initAppId, options = {}) => {
 			message: err.message || err
 		}
 
-		this.track('error:'+type, {
-			payload: errObject
-		})
+		this.track('error:'+type, errObject)
 
 		if (typeof this.onError === 'function') this.onError(type, err)
 	}
@@ -284,13 +270,19 @@ const sendQueue = () => {
 	// Connection not opened?
 	if (!ws || ws.readyState !== WebSocket.OPEN) return
 
-	// Send an unique random token with it to check if server successfully got it
+	// Nothing to report
+	if (!queue.length) return
+
+	// Send an unique random token with it to
+	// If it comes back server automatically got info
 	wsConfirmation = Math.random().toString()
 
 	let payload = {
 		confirmation: wsConfirmation,
 		data: queue
 	}
+
+	if (enableLogs) console.log('Nucleus: sending cached events ('+queue.length+')')
 
 	ws.send(JSON.stringify(payload))
 }
@@ -299,8 +291,12 @@ const sendQueue = () => {
 // Try to report the data to the server
 const reportData = () => {
 
-	// Nothing to report
-	if (!queue.length) return
+	// If nothing to report no need to reopen connection if in main process
+	if (!queue.length && (!utils.isRenderer() && !onlyMainProcess)) return
+
+	if (disableTracking) return
+
+	// If socket was closed for whatever reason re-open it
 
 	if (!ws || ws.readyState !== WebSocket.OPEN) {
 
@@ -310,17 +306,20 @@ const reportData = () => {
 		ws = new WebSocket(`ws${dev ? '' : 's'}://${apiUrl}/app/${appId}/track`)
 
 		// We are going to need to open this later
-		ws.on('error', _ => console.warn)
-		ws.on('close', _ => console.warn)
+		ws.on('error', (e) => {
+			if (enableLogs) console.warn(e)
+		})
+		ws.on('close', (e) => {
+			if (enableLogs) console.warn(e)
+		})
 
 		ws.on('message', messageFromServer)
 
 		ws.on('open', sendQueue )
 
-	} else {
-		sendQueue()
 	}
 
+	if (queue.length) sendQueue()
 }
 
 const messageFromServer = (message) => {
@@ -348,6 +347,7 @@ const messageFromServer = (message) => {
 
 	if (data.confirmation === wsConfirmation) {
 		// Data was successfully reported, we can empty the queue
+		if (enableLogs) console.log('Nucleus: server successfully registered data')
 		queue = []
 		store.set('nucleus-queue', queue)
 	}
