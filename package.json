@@ -1,7 +1,7 @@
 {
   "name": "electron-nucleus",
-  "version": "2.0.0",
-  "description": "Analytics and bug reports for Electron.",
+  "version": "2.0.1",
+  "description": "Analytics and bug reporting for Electron.",
   "main": "index.js",
   "repository": {
     "type": "git",
@@ -9,6 +9,7 @@
   },
   "keywords": [
     "analytics",
+    "tracking",
     "licensing",
     "crash",
     "bugs",

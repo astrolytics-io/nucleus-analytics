@@ -87,9 +87,21 @@ let Nucleus = (initAppId, options = {}) => {
 				})
 			}
 
+			// Make sure we stay in sync
+			// Keeps live list of users updated too
+			setInterval(() => {
+				reportData()
+			}, reportDelay * 1000)
+
+
 			// The rest is only for renderer process
 			if (!utils.isRenderer()) {
-				if (options.onlyMainProcess) this.track('init')
+
+				if (options.onlyMainProcess) {
+					this.track('init')
+					reportData()
+				}
+				
 				return
 			}
 
@@ -108,15 +120,6 @@ let Nucleus = (initAppId, options = {}) => {
 				reportData()
 
 			})
-
-			// Make sure we stay in sync
-			// Keeps live list of users updated too
-			setInterval(() => {
-				
-				reportData()
-
-			}, reportDelay * 1000)
-
 		}
 		
 	}
@@ -161,6 +164,7 @@ let Nucleus = (initAppId, options = {}) => {
 	}
 
 	module.setProps = function(props) {
+		if (props.userId) userId = props.userId
 		this.track('nucleus:props', props)
 	}
 
