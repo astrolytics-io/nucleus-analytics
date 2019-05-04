@@ -44,6 +44,7 @@ let disableTracking = false
 let queue = []
 let cache = {}
 let reportDelay = 20
+let onlyMainProcess = false
 
 let tempUserEvents = {}
 
@@ -72,6 +73,7 @@ let Nucleus = (initAppId, options = {}) => {
 		if (options.enableLogs) enableLogs = options.enableLogs
 		if (options.disableTracking) disableTracking = options.disableTracking
 		if (options.reportDelay) reportDelay = options.reportDelay
+		if (options.onlyMainProcess) onlyMainProcess = options.onlyMainProcess
 
 		sessionId = Math.floor(Math.random() * 1e4) + 1
 
@@ -94,16 +96,19 @@ let Nucleus = (initAppId, options = {}) => {
 			}, reportDelay * 1000)
 
 
-			// The rest is only for renderer process
 			if (!utils.isRenderer()) {
 
-				if (options.onlyMainProcess) {
+				// Force tracking of init if we're only going to use
+				// the module in the main
+				if (onlyMainProcess) {
 					this.track('init')
 					reportData()
 				}
 				
 				return
 			}
+
+			// The rest is only for renderer process
 
 			this.track('init')
 			reportData()
@@ -296,6 +301,7 @@ const sendQueue = () => {
 const reportData = () => {
 
 	// If nothing to report no need to reopen connection if in main process
+	// Except if we only report from main process
 	if (!queue.length && (!utils.isRenderer() && !onlyMainProcess)) return
 
 	if (disableTracking) return
