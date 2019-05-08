@@ -12,10 +12,6 @@ module.exports = {
 		const isEnvSet = 'ELECTRON_IS_DEV' in process.env
 		return isEnvSet ? getFromEnv : (process.defaultApp || /node_modules[\\/]electron[\\/]/.test(process.execPath))
 	},
-	getLocalTime: () => {
-		let accessTime = new Date()
-		return new Date(accessTime.getTime() - accessTime.getTimezoneOffset()*60000)
-	},
 	compareVersions (a, b) {
 		var i, diff
 		var regExStrip0 = /(\.0+)+$/

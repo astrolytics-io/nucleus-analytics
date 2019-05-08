@@ -138,7 +138,7 @@ let Nucleus = (initAppId, options = {}) => {
 
 		let eventData = {
 			event: eventName,
-			date: utils.getLocalTime(),
+			date: new Date(),
 			appId: appId,
 			userId: userId,
 			machineId: machineId,

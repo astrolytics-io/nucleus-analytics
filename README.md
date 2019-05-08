@@ -27,7 +27,7 @@ const Nucleus = require("electron-nucleus")("<Your App Id>")
 
 Also add it to the main process to make sure all crashes are reported.
 
-If you are only able to use Nucleus in the main process, you can use the `onlyMainProcess` option.
+If you are only able to use Nucleus in the main process, you should set the `onlyMainProcess` option to `true`.
 
 You can sign up and get a tracking ID for your app [here](https://nucleus.sh).
 
