@@ -43,6 +43,7 @@ const Nucleus = require("electron-nucleus")("<Your App Id>", {
 	onlyMainProcess: false, // If you can only use Nucleus in the mainprocess
 	disableErrorReports: false, // disable errors reporting (default: false)
 	userId: 'user@email.com', // Set an identifier for this user
+	persist: false, // Cache events to disk if offline to report later
 	version: '1.3.9', // Set a custom version for your app (default: autodetected)
 	language: 'es' // Specify a custom language (default: autodetected)
 })

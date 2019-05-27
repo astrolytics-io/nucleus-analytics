@@ -33,7 +33,6 @@ let dev = false // Internal use only, for developing with Nucleus dev
 let apiUrl = "app.nucleus.sh"
 
 let ws = null
-let wsConfirmation = null
 let appId = null
 let latestVersion = '0.0.0'
 let newUser = false
@@ -45,13 +44,17 @@ let queue = []
 let cache = {}
 let reportDelay = 20
 let onlyMainProcess = false
+let persist = false
 
 let tempUserEvents = {}
 
-if (store.has('nucleus-cache')) cache = store.get('nucleus-cache')
+if (store.has('nucleus-cache')) { 
+	cache = store.get('nucleus-cache')
+} else {
+	newUser = true
+}
 
-if (store.has('nucleus-queue')) queue = store.get('nucleus-queue')
-else newUser = true
+if (persist && store.has('nucleus-queue')) queue = store.get('nucleus-queue')
 
 
 let Nucleus = (initAppId, options = {}) => {
@@ -74,6 +77,7 @@ let Nucleus = (initAppId, options = {}) => {
 		if (options.disableTracking) disableTracking = options.disableTracking
 		if (options.reportDelay) reportDelay = options.reportDelay
 		if (options.onlyMainProcess) onlyMainProcess = options.onlyMainProcess
+		if (options.persist) persist = options.persist
 
 		sessionId = Math.floor(Math.random() * 1e4) + 1
 
@@ -120,13 +124,8 @@ let Nucleus = (initAppId, options = {}) => {
 			}
 
 			// Automatically send data when back online
-			window.addEventListener('online', _ => {
-				
-				reportData()
-
-			})
+			window.addEventListener('online', reportData)
 		}
-		
 	}
 
 
@@ -136,10 +135,14 @@ let Nucleus = (initAppId, options = {}) => {
 
 		if (enableLogs) console.log('Nucleus: adding to reporting queue event '+eventName)
 
+		// An ID for the event so when the server returns it we know it was reported
+		let tempId = Math.floor(Math.random() * 1e6) + 1
+
 		let eventData = {
 			event: eventName,
 			date: new Date(),
 			appId: appId,
+			id: tempId,
 			userId: userId,
 			machineId: machineId,
 			sessionId: sessionId,
@@ -165,7 +168,7 @@ let Nucleus = (initAppId, options = {}) => {
 
 		queue.push(eventData)
 
-		store.set('queue', queue)
+		if (persist) store.set('queue', queue)
 	}
 
 	module.setProps = function(props) {
@@ -282,12 +285,7 @@ const sendQueue = () => {
 	// Nothing to report
 	if (!queue.length) return
 
-	// Send an unique random token with it to
-	// If it comes back server automatically got info
-	wsConfirmation = Math.random().toString()
-
 	let payload = {
-		confirmation: wsConfirmation,
 		data: queue
 	}
 
@@ -355,11 +353,14 @@ const messageFromServer = (message) => {
 		checkUpdates()
 	}
 
-	if (data.confirmation === wsConfirmation) {
+	if (data.reportedIds || data.confirmation) {
 		// Data was successfully reported, we can empty the queue
 		if (enableLogs) console.log('Nucleus: server successfully registered data')
-		queue = []
-		store.set('nucleus-queue', queue)
+
+		if (data.reportedIds) queue = queue.filter(e => !data.reportedIds.includes(e.id))
+		else if (data.confirmation) queue = [] // Legacy handling
+		
+		if (persist) store.set('nucleus-queue', queue)
 	}
 
 }
