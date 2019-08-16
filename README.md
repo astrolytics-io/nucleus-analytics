@@ -5,7 +5,7 @@ We tried to make it as simple as possible to report the data you need to analyze
 
 To start using this module, sign up and get an app ID on the [Nucleus website](https://nucleus.sh). 
 
-This module is mainly working on the renderer process. It should still be initiated in the main process for catching all errors (or reporting events inside it).
+This module is mainly working on the renderer process. It should still be initiated in the main process for catching all errors (or reporting events inside it). However, if you only have access to the main process you can still use Nucleus as explained below.
 
 
 ## Installation
@@ -25,11 +25,15 @@ Add the following code to import Nucleus **in the renderer process**:
 const Nucleus = require("electron-nucleus")("<Your App Id>")
 ```
 
-Also add it to the main process to make sure all crashes are reported.
+Also add it to the main process if you need to report events from there.
 
-If you are only able to use Nucleus in the main process, you should set the `onlyMainProcess` option to `true`.
+If you are only able to use Nucleus in the main process, you should set the `onlyMainProcess` option:
 
-You can sign up and get a tracking ID for your app [here](https://nucleus.sh).
+```javascript
+const Nucleus = require("electron-nucleus")("<Your App Id>", { onlyMainProcess: true })
+```
+
+Sign up and get a tracking ID for your app [here](https://nucleus.sh).
 
 
 ### Options
