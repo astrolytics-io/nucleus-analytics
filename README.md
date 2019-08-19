@@ -169,6 +169,8 @@ Nucleus.trackError('myCustomError', err)
 
 If the user is running a version inferior to the one set in your app settings (account section in the dashboard), it can call a function so you can alert the user (or something else).
 
+If there's an update, the function will be called when starting the app.
+
 
 ```javascript
 Nucleus.onUpdate = (lastVersion) => {
