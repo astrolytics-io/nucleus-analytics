@@ -280,8 +280,11 @@ const checkUpdates = () => {
 const sendQueue = () => {
 
 	// Connection not opened?
-	if (!ws || ws.readyState !== WebSocket.OPEN) return
-
+	if (!ws || ws.readyState !== WebSocket.OPEN) {
+		// persists current queue in case app is closed before sync
+		if (persist) store.set('nucleus-queue', queue)
+		return
+	}
 	// Nothing to report
 	if (!queue.length) return
 
