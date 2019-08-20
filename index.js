@@ -56,13 +56,12 @@ if (store.has('nucleus-cache')) {
 
 if (persist && store.has('nucleus-queue')) queue = store.get('nucleus-queue')
 
+let moduleObject = {}
 
 let Nucleus = (initAppId, options = {}) => {
 
-	let module = {}
-
 	// not arrow function for access to this
-	module.init = function(initAppId, options = {}) {
+	moduleObject.init = function(initAppId, options = {}) {
 
 		appId = initAppId
 
@@ -129,7 +128,7 @@ let Nucleus = (initAppId, options = {}) => {
 	}
 
 
-	module.track = (eventName, data) => {
+	moduleObject.track = (eventName, data) => {
 
 		if (!eventName || disableTracking || (utils.isDevMode() && !useInDev)) return
 
@@ -171,14 +170,14 @@ let Nucleus = (initAppId, options = {}) => {
 		if (persist) store.set('queue', queue)
 	}
 
-	module.setProps = function(props) {
+	moduleObject.setProps = function(props) {
 		if (props.userId) userId = props.userId
 		this.track('nucleus:props', props)
 	}
 
 	// DEPRECATED
 	// Licensing integration in Nucleus
-	module.checkLicense = (license, callback) => {
+	moduleObject.checkLicense = (license, callback) => {
 
 		// No license was supplied
 		if (!license || license.trim() == '')  {
@@ -205,7 +204,7 @@ let Nucleus = (initAppId, options = {}) => {
 	}
 
 	// Not arrow for this
-	module.trackError = function(type, err) {
+	moduleObject.trackError = function(type, err) {
 		// Convert Error to normal object, so we can stringify it
 		let errObject = {
 			stack: err.stack || err,
@@ -219,7 +218,7 @@ let Nucleus = (initAppId, options = {}) => {
 
 
 	// Get the custom JSON data set from the dashboard
-	module.getCustomData = (callback) => {
+	moduleObject.getCustomData = (callback) => {
 
 		// If it's already cached, pull it from here
 		if (cache.customData) return callback(null, cache.customData)
@@ -231,7 +230,7 @@ let Nucleus = (initAppId, options = {}) => {
 
 	}
 
-	module.setUserId = function(newId) {
+	moduleObject.setUserId = function(newId) {
 		if (!newId || newId.trim() === '') return false
 
 		if (enableLogs) console.log('Nucleus: user id set to '+newId)
@@ -243,37 +242,36 @@ let Nucleus = (initAppId, options = {}) => {
 		return true
 	}
 
-	module.disableTracking = () => {
+	moduleObject.disableTracking = () => {
 		if (enableLogs) console.log('Nucleus: tracking disabled')
 
 		disableTracking = true
 	}
 
-	module.enableTracking = () => {
+	moduleObject.enableTracking = () => {
 		if (enableLogs) console.log('Nucleus: tracking enabled')
 
 		disableTracking = false
 	}
 
-	// So it inits if we directly pass the app id
-	if (initAppId) module.init(initAppId, options)
+	moduleObject.checkUpdates = function() {
+		let currentVersion = version
 
-	return module
+		let updateAvailable = !!(utils.compareVersions(currentVersion, latestVersion) < 0)
 
-}
+		// We call 'onUpdate' if the user created this function
+		if (!alertedUpdate && updateAvailable && typeof this.onUpdate === 'function') {
+			// So we don't trigger it 1000 times
+			alertedUpdate = true
 
-const checkUpdates = () => {
-	let currentVersion = version
-
-	let updateAvailable = !!(utils.compareVersions(currentVersion, latestVersion) < 0)
-
-	// We call 'onUpdate' if the user created this function
-	if (!alertedUpdate && updateAvailable && Nucleus && typeof Nucleus.onUpdate === 'function') {
-		// So we don't trigger it 1000 times
-		alertedUpdate = true
-
-		Nucleus.onUpdate(latestVersion)
+			this.onUpdate(latestVersion)
+		}
 	}
+
+	// So it inits if we directly pass the app id
+	if (initAppId) moduleObject.init(initAppId, options)
+
+	return moduleObject
 }
 
 
@@ -339,6 +337,7 @@ const messageFromServer = (message) => {
 
 	try {
 		data = JSON.parse(message)
+		if (enableLogs) console.log('Nucleus: server said', data)
 	} catch (e) {
 		if (enableLogs) console.warn('Nucleus: could not parse message from server.')
 		return
@@ -353,7 +352,8 @@ const messageFromServer = (message) => {
 	if (data.latestVersion) {
 		// Get the app's latest version
 		latestVersion = data.latestVersion
-		checkUpdates()
+
+		moduleObject.checkUpdates()
 	}
 
 	if (data.reportedIds || data.confirmation) {
