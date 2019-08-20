@@ -7,7 +7,7 @@ const WebSocket = require('ws')
 
 const Store = require('electron-store')
 const store = new Store({
-	// encryptionKey: 's0meR1nd0mK3y', // for obfuscation, dont obfuscated data while testing
+	encryptionKey: 's0meR1nd0mK3y', // for obfuscation
 	name: 'nucleus' // Doesn't interferate if app is using electron-store
 })
 
@@ -44,7 +44,7 @@ let queue = []
 let cache = {}
 let reportDelay = 20
 let onlyMainProcess = false
-let persist = false
+let persist = true
 
 let tempUserEvents = {}
 
