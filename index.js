@@ -7,7 +7,7 @@ const WebSocket = require('ws')
 
 const Store = require('electron-store')
 const store = new Store({
-	encryptionKey: 's0meR1nd0mK3y', // for obfuscation
+	// encryptionKey: 's0meR1nd0mK3y', // for obfuscation, dont obfuscated data while testing
 	name: 'nucleus' // Doesn't interferate if app is using electron-store
 })
 
@@ -48,7 +48,7 @@ let persist = false
 
 let tempUserEvents = {}
 
-if (store.has('nucleus-cache')) { 
+if (store.has('nucleus-cache')) {
 	cache = store.get('nucleus-cache')
 } else {
 	newUser = true
@@ -108,7 +108,7 @@ let Nucleus = (initAppId, options = {}) => {
 					this.track('init')
 					reportData()
 				}
-				
+
 				return
 			}
 
@@ -187,7 +187,7 @@ let Nucleus = (initAppId, options = {}) => {
 				status: 'nolicense'
 			})
 		}
-		
+
 		// Prepare license with needed data to be sent to server
 		let data = {
 			key: license.trim(),
@@ -233,13 +233,13 @@ let Nucleus = (initAppId, options = {}) => {
 
 	module.setUserId = function(newId) {
 		if (!newId || newId.trim() === '') return false
-		
+
 		if (enableLogs) console.log('Nucleus: user id set to '+newId)
-		
+
 		userId = newId
-		
+
 		this.track('nucleus:beacon') // So we can know what the specs of this user
-		
+
 		return true
 	}
 
@@ -251,12 +251,12 @@ let Nucleus = (initAppId, options = {}) => {
 
 	module.enableTracking = () => {
 		if (enableLogs) console.log('Nucleus: tracking enabled')
-		
+
 		disableTracking = false
 	}
 
 	// So it inits if we directly pass the app id
-	if (initAppId) module.init(initAppId, options) 
+	if (initAppId) module.init(initAppId, options)
 
 	return module
 
@@ -274,7 +274,7 @@ const checkUpdates = () => {
 
 		Nucleus.onUpdate(latestVersion)
 	}
-} 
+}
 
 
 const sendQueue = () => {
@@ -333,7 +333,7 @@ const reportData = () => {
 const messageFromServer = (message) => {
 
 	let data = {}
-	
+
 	try {
 		data = JSON.parse(message)
 	} catch (e) {
@@ -359,7 +359,7 @@ const messageFromServer = (message) => {
 
 		if (data.reportedIds) queue = queue.filter(e => !data.reportedIds.includes(e.id))
 		else if (data.confirmation) queue = [] // Legacy handling
-		
+
 		if (persist) store.set('nucleus-queue', queue)
 	}
 
