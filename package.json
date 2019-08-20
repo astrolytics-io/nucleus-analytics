@@ -1,6 +1,6 @@
 {
   "name": "electron-nucleus",
-  "version": "2.2.0",
+  "version": "2.2.2",
   "description": "Analytics and bug reporting for Electron.",
   "main": "index.js",
   "repository": {
@@ -23,8 +23,8 @@
   "homepage": "https://nucleus.sh",
   "dependencies": {
     "electron-store": "^4.0.0",
-    "node-machine-id": "^1.1.10",
+    "node-machine-id": "^1.1.12",
     "request": "^2.88.0",
-    "ws": "^7.0.0"
+    "ws": "^7.1.2"
   }
 }
