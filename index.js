@@ -44,7 +44,7 @@ let queue = []
 let cache = {}
 let reportDelay = 20
 let onlyMainProcess = false
-let persist = false // Disabled by default as a lots of events can crash the app
+let persist = false // Disabled by default as lots of events can crash the app
 
 let tempUserEvents = {}
 
@@ -53,8 +53,6 @@ if (store.has('nucleus-cache')) {
 } else {
 	newUser = true
 }
-
-if (persist && store.has('nucleus-queue')) queue = store.get('nucleus-queue')
 
 let moduleObject = {}
 
@@ -77,6 +75,8 @@ let Nucleus = (initAppId, options = {}) => {
 		if (options.reportDelay) reportDelay = options.reportDelay
 		if (options.onlyMainProcess) onlyMainProcess = options.onlyMainProcess
 		if (options.persist) persist = options.persist
+		
+		if (persist && store.has('nucleus-queue')) queue = store.get('nucleus-queue')
 
 		sessionId = Math.floor(Math.random() * 1e4) + 1
 
