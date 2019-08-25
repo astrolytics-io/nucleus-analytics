@@ -44,17 +44,15 @@ let queue = []
 let cache = {}
 let reportDelay = 20
 let onlyMainProcess = false
-let persist = false
+let persist = false // Disabled by default as lots of events can crash the app
 
 let tempUserEvents = {}
 
-if (store.has('nucleus-cache')) { 
+if (store.has('nucleus-cache')) {
 	cache = store.get('nucleus-cache')
 } else {
 	newUser = true
 }
-
-if (persist && store.has('nucleus-queue')) queue = store.get('nucleus-queue')
 
 let moduleObject = {}
 
@@ -77,6 +75,8 @@ let Nucleus = (initAppId, options = {}) => {
 		if (options.reportDelay) reportDelay = options.reportDelay
 		if (options.onlyMainProcess) onlyMainProcess = options.onlyMainProcess
 		if (options.persist) persist = options.persist
+		
+		if (persist && store.has('nucleus-queue')) queue = store.get('nucleus-queue')
 
 		sessionId = Math.floor(Math.random() * 1e4) + 1
 
@@ -107,7 +107,7 @@ let Nucleus = (initAppId, options = {}) => {
 					this.track('init')
 					reportData()
 				}
-				
+
 				return
 			}
 
@@ -186,7 +186,7 @@ let Nucleus = (initAppId, options = {}) => {
 				status: 'nolicense'
 			})
 		}
-		
+
 		// Prepare license with needed data to be sent to server
 		let data = {
 			key: license.trim(),
@@ -232,13 +232,13 @@ let Nucleus = (initAppId, options = {}) => {
 
 	moduleObject.setUserId = function(newId) {
 		if (!newId || newId.trim() === '') return false
-		
+
 		if (enableLogs) console.log('Nucleus: user id set to '+newId)
-		
+
 		userId = newId
-		
+
 		this.track('nucleus:beacon') // So we can know what the specs of this user
-		
+
 		return true
 	}
 
@@ -250,7 +250,7 @@ let Nucleus = (initAppId, options = {}) => {
 
 	moduleObject.enableTracking = () => {
 		if (enableLogs) console.log('Nucleus: tracking enabled')
-		
+
 		disableTracking = false
 	}
 
@@ -266,21 +266,23 @@ let Nucleus = (initAppId, options = {}) => {
 
 			this.onUpdate(latestVersion)
 		}
-	} 
+	}
 
 	// So it inits if we directly pass the app id
-	if (initAppId) moduleObject.init(initAppId, options) 
+	if (initAppId) moduleObject.init(initAppId, options)
 
 	return moduleObject
-
 }
 
 
 const sendQueue = () => {
 
 	// Connection not opened?
-	if (!ws || ws.readyState !== WebSocket.OPEN) return
-
+	if (!ws || ws.readyState !== WebSocket.OPEN) {
+		// persists current queue in case app is closed before sync
+		if (persist) store.set('nucleus-queue', queue)
+		return
+	}
 	// Nothing to report
 	if (!queue.length) return
 
@@ -332,7 +334,7 @@ const reportData = () => {
 const messageFromServer = (message) => {
 
 	let data = {}
-	
+
 	try {
 		data = JSON.parse(message)
 		if (enableLogs) console.log('Nucleus: server said', data)
@@ -350,7 +352,7 @@ const messageFromServer = (message) => {
 	if (data.latestVersion) {
 		// Get the app's latest version
 		latestVersion = data.latestVersion
-		
+
 		moduleObject.checkUpdates()
 	}
 
@@ -360,7 +362,7 @@ const messageFromServer = (message) => {
 
 		if (data.reportedIds) queue = queue.filter(e => !data.reportedIds.includes(e.id))
 		else if (data.confirmation) queue = [] // Legacy handling
-		
+
 		if (persist) store.set('nucleus-queue', queue)
 	}
 
