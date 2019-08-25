@@ -281,10 +281,24 @@ const sendQueue = () => {
 	if (!ws || ws.readyState !== WebSocket.OPEN) {
 		// persists current queue in case app is closed before sync
 		if (persist) store.set('nucleus-queue', queue)
+	
 		return
 	}
-	// Nothing to report
-	if (!queue.length) return
+
+	if (!queue.length) { 
+		
+		// Nothing to report, send heartbeat anyway
+		// For example if the connection was lost and is back
+		// this is needed to tell the server which user this is
+		// only the machine id is needed to derive the other informations
+		
+		const heartbeat = {
+			event: 'nucleus:heartbeat',
+			machineId: machineId
+		}
+
+		return ws.send(JSON.stringify({ data: [ heartbeat ] }))
+	}
 
 	let payload = {
 		data: queue
@@ -325,7 +339,6 @@ const reportData = () => {
 		ws.on('message', messageFromServer)
 
 		ws.on('open', sendQueue )
-
 	}
 
 	if (queue.length) sendQueue()
