@@ -44,7 +44,7 @@ let queue = []
 let cache = {}
 let reportDelay = 20
 let onlyMainProcess = false
-let persist = true
+let persist = false // Disabled by default as a lots of events can crash the app
 
 let tempUserEvents = {}
 
