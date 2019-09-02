@@ -58,11 +58,12 @@ By default **version**, **language** and **country** are autodetected but you ca
 Where options is an object, **each property is optional**. You can start using the module with just the app ID.
 
 **Note** : when running in development, the app version will be '0.0.0'
-<!-- 
-### Track custom datapoints
 
-You can report custom datapoints along with the default data. 
-Those will be associated to users if you set an user ID and visible in your dashboard.
+### Track custom data
+
+You can report custom data along with the automatic data.
+ 
+Those will be visible in your user dashboard if you previously set an user ID.
 
 Properties can either **numbers**, **strings** or **booleans**. 
 Nested properties or arrays aren't supported at the moment.
@@ -74,7 +75,7 @@ Nucleus.setProps({
 	jobType: 'CEO'
 })
 ```
- -->
+
 ### Events
 
 After initializing Nucleus, you can send your own custom events.
