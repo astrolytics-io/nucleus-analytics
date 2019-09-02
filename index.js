@@ -65,7 +65,7 @@ let Nucleus = (initAppId, options = {}) => {
 
 		useInDev = !(options.disableInDev)
 
-		if (options.userId) userId = options.userId
+		if (options.autoUserId) userId = generateUserId()
 		if (options.version) version = options.version
 		if (options.language) language = options.language
 		if (options.endpoint) apiUrl = options.endpoint
@@ -75,7 +75,8 @@ let Nucleus = (initAppId, options = {}) => {
 		if (options.reportDelay) reportDelay = options.reportDelay
 		if (options.onlyMainProcess) onlyMainProcess = options.onlyMainProcess
 		if (options.persist) persist = options.persist
-		
+		if (options.userId) userId = options.userId
+
 		if (persist && store.has('nucleus-queue')) queue = store.get('nucleus-queue')
 
 		sessionId = Math.floor(Math.random() * 1e4) + 1
@@ -98,7 +99,6 @@ let Nucleus = (initAppId, options = {}) => {
 				reportData()
 			}, reportDelay * 1000)
 
-
 			if (!utils.isRenderer()) {
 
 				// Force tracking of init if we're only going to use
@@ -112,7 +112,6 @@ let Nucleus = (initAppId, options = {}) => {
 			}
 
 			// The rest is only for renderer process
-
 			this.track('init')
 			reportData()
 
@@ -190,7 +189,6 @@ let Nucleus = (initAppId, options = {}) => {
 			platform: platform,
 			version: version
 		}
-
 
 		// Ask for the server to validate it
 		request({ url: `http${dev ? '' : 's'}://${apiUrl}/app/${appId}/license/validate`, method: 'POST', json: {data: data} }, (err, res, body) => {
@@ -279,6 +277,12 @@ let Nucleus = (initAppId, options = {}) => {
 	return moduleObject
 }
 
+const generateUserId = () => {
+	const hostname = os.hostname()
+	const username = os.userInfo().username
+
+	return username + '@' + hostname
+}
 
 const sendQueue = () => {
 

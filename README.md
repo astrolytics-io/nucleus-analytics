@@ -43,13 +43,14 @@ You can init Nucleus with options:
 ```javascript
 const Nucleus = require("electron-nucleus")("<Your App Id>", {
 	disableInDev: false, // disable module while in development (default: false)
-	disableTracking: false, // Completely disable tracking
-	onlyMainProcess: false, // If you can only use Nucleus in the mainprocess
+	disableTracking: false, // completely disable tracking
+	onlyMainProcess: false, // if you can only use Nucleus in the mainprocess
 	disableErrorReports: false, // disable errors reporting (default: false)
-	userId: 'user@email.com', // Set an identifier for this user
-	persist: false, // Cache events to disk if offline to report later
-	version: '1.3.9', // Set a custom version for your app (default: autodetected)
-	language: 'es' // Specify a custom language (default: autodetected)
+	autoUserId: false, // auto gives the user an id: username@hostname
+	userId: 'user@email.com', // set an identifier for this user
+	persist: false, // cache events to disk if offline to report later
+	version: '1.3.9', // set a custom version for your app (default: autodetected)
+	language: 'es' // specify a custom language (default: autodetected)
 })
 ```
 
@@ -127,9 +128,9 @@ You can also supply a `disableTracking: true` option to the module on start if y
 
 You can track specific users actions on the 'User Explorer' section of your dashboard.
 
-For that, you can supply an `userId` when initing the Nucleus module.
+For that, you can supply an `userId` when initing the Nucleus module. 
 
-It can be you own generated ID, their email, username... etc.
+It can be your own generated ID, an email, username... etc.
 
 ```javascript
 const Nucleus = require("electron-nucleus")("<Your App Id>", {
@@ -137,11 +138,13 @@ const Nucleus = require("electron-nucleus")("<Your App Id>", {
 })
 ```
 
-or, if you don't know it on start, you can add it later with:
+Or if you don't know it on start, you can add it later with:
 
 ```javascript
 Nucleus.setUserId('someUniqueUserId')
 ```
+
+Alternatively, set the `autoUserId` option of the module to `true`  to automatically assign the user an ID based on his username and hostname.
 
 ### Errors
 
@@ -188,13 +191,13 @@ You can check if a license (created via Nucleus's API) is valid with the followi
 
 ```javascript
 Nucleus.checkLicense('SOME_LICENSE', (err, license) => {
-    if (err) return console.error(err)
+	if (err) return console.error(err)
 
-    if (license.valid) {
-        console.log('License is valid :) Using policy '+license.policy)
-    } else {
-        console.log('License is invalid :(')
-    }
+	if (license.valid) {
+		console.log('License is valid :) Using policy '+license.policy)
+	} else {
+		console.log('License is invalid :(')
+	}
 })
 ```
 

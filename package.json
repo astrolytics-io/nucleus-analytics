@@ -1,6 +1,6 @@
 {
   "name": "electron-nucleus",
-  "version": "2.2.5",
+  "version": "2.3.0",
   "description": "Analytics and bug reporting for Electron.",
   "main": "index.js",
   "repository": {
