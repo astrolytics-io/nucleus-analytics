@@ -132,7 +132,7 @@ let Nucleus = (initAppId, options = {}) => {
 
 		if (!eventName || disableTracking || (utils.isDevMode() && !useInDev)) return
 
-		if (enableLogs) console.log('Nucleus: adding to reporting queue event '+eventName)
+		if (enableLogs) console.log('Nucleus: adding to queue: '+eventName)
 
 		// An ID for the event so when the server returns it we know it was reported
 		let tempId = Math.floor(Math.random() * 1e6) + 1
