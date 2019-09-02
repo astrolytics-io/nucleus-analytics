@@ -44,7 +44,7 @@ let queue = []
 let cache = {}
 let reportDelay = 20
 let onlyMainProcess = false
-let persist = false // Disabled by default as lots of events can crash the app
+let persist = false // Disabled by default as lots of events can crash the app (by writing too much to file)
 
 let tempUserEvents = {}
 
@@ -159,20 +159,15 @@ let Nucleus = (initAppId, options = {}) => {
 			moduleVersion: moduleVersion
 		}
 
-		// So we don't send unnecessary data with every events
-		// Only when needed (= first opening, after reporting user and on error)
-		if (['init', 'nucleus:beacon'].includes(eventName) || eventName.includes("error:")) {
+		// So we don't send unnecessary data when not needed 
+		// (= first event, and on error)
+		if (['init'].includes(eventName) || eventName.includes("error:")) {
 			Object.keys(extra).forEach((key) => eventData[key] = extra[key] )
 		}
 
 		queue.push(eventData)
 
 		if (persist) store.set('queue', queue)
-	}
-
-	moduleObject.setProps = function(props) {
-		if (props.userId) userId = props.userId
-		this.track('nucleus:props', props)
 	}
 
 	// DEPRECATED
@@ -230,6 +225,7 @@ let Nucleus = (initAppId, options = {}) => {
 
 	}
 
+	// So we can follow this user actions
 	moduleObject.setUserId = function(newId) {
 		if (!newId || newId.trim() === '') return false
 
@@ -237,9 +233,16 @@ let Nucleus = (initAppId, options = {}) => {
 
 		userId = newId
 
-		this.track('nucleus:beacon') // So we can know what the specs of this user
+		this.track('nucleus:userid') 
 
 		return true
+	}
+
+	// Allows to set custom properties to users
+	moduleObject.setProps = function(props) {
+		if (props.userId) userId = props.userId
+		
+		this.track('nucleus:props', props)
 	}
 
 	moduleObject.disableTracking = () => {
@@ -254,6 +257,8 @@ let Nucleus = (initAppId, options = {}) => {
 		disableTracking = false
 	}
 
+	// Checks locally if the current version is inferior to 'latest'
+	// Called if the server returned a 'latest' version
 	moduleObject.checkUpdates = function() {
 		let currentVersion = version
 
