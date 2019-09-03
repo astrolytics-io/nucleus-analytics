@@ -3,6 +3,7 @@
   "version": "2.3.0",
   "description": "Analytics and bug reporting for Electron.",
   "main": "index.js",
+  "types": "index.d.ts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/lyserio/electron-nucleus.git"
