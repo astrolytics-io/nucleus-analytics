@@ -2,6 +2,10 @@
 // Project: https://github.com/lyserio/electron-nucleus
 
 export interface Nucleus {
+  init: ( 
+    appId: string,
+    config?: {} 
+  ) => void;
   setUserId: (id: number | string) => void;
   onError: (
     type: "uncaughtException" | "unhandledRejection" | "windowError",
@@ -15,6 +19,13 @@ export interface Nucleus {
   ) => void;
   disableTracking: () => void;
   enableTracking: () => void;
+  checkLicense: (
+    license: string,
+    callback: Callback<any>
+  ) => void;
+  getCustomData: ( callback: Callback<any> ) => void;
+  checkUpdates: () => void;
+  onUpdate: ( version: string ) => void;
 }
 
 declare const nucleus: (
@@ -22,13 +33,13 @@ declare const nucleus: (
   config?: {
     /*  disable module while in development (default: false) */
     disableInDev?: boolean;
-    /*  completely disable tracking */
+    /*  completely disable tracking (default: false) */
     disableTracking?: boolean;
-    /*  if you can only use Nucleus in the mainprocess */
+    /*  if you can only use Nucleus in the mainprocess (default: false)*/
     onlyMainProcess?: boolean;
     /*  disable errors reporting (default: false) */
     disableErrorReports?: boolean;
-    /*  auto gives the user an id: username@hostname default: boolean */
+    /*  auto gives the user an id: username@hostname rdefault: false) */
     autoUserId?: boolean;
     /*  set an identifier for this user */
     userId?: number | string;
