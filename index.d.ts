@@ -21,9 +21,9 @@ export interface Nucleus {
   enableTracking: () => void;
   checkLicense: (
     license: string,
-    callback: Callback<any>
+    callback: (error: Error | null, licenseInfo?: any) => void,
   ) => void;
-  getCustomData: ( callback: Callback<any> ) => void;
+  getCustomData: (callback: (error: Error | null, customData?: any) => void) => void;
   checkUpdates: () => void;
   onUpdate: ( version: string ) => void;
 }
