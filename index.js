@@ -238,9 +238,14 @@ let Nucleus = (initAppId, options = {}) => {
 	}
 
 	// Allows to set custom properties to users
-	moduleObject.setProps = function(props) {
-		if (props.userId) userId = props.userId
-		
+	moduleObject.setProps = function(newProps, overwrite) {
+		if (newProps.userId) userId = newProps.userId
+
+		// Merge past and new props
+		if (!overwrite) props = Object.assign(props, newProps)
+		else props = newProps
+			
+		store.set('nucleus-props', props)
 		this.track('nucleus:props', props)
 	}
 
@@ -297,8 +302,8 @@ const sendQueue = () => {
 
 	if (!queue.length) { 
 		
-		// Nothing to report, send heartbeat anyway
-		// For example if the connection was lost and is back
+		// Nothing to report, send a heartbeat anyway
+		// (like if the connection was lost and is back)
 		// this is needed to tell the server which user this is
 		// only the machine id is needed to derive the other informations
 		

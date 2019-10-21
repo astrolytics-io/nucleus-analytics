@@ -12,7 +12,7 @@ export interface Nucleus {
     error: Error
   ) => void;
   trackError: (name: string, error: Error) => void;
-  setProps: (props: { [key: string]: string | number | boolean }) => void;
+  setProps: (props: { [key: string]: string | number | boolean }, overwrite: boolean) => void;
   track: (
     customEvent: string,
     data?: { [key: string]: string | number | boolean }
@@ -39,7 +39,7 @@ declare const nucleus: (
     onlyMainProcess?: boolean;
     /*  disable errors reporting (default: false) */
     disableErrorReports?: boolean;
-    /*  auto gives the user an id: username@hostname rdefault: false) */
+    /*  auto gives the user an id: username@hostname default: false) */
     autoUserId?: boolean;
     /*  set an identifier for this user */
     userId?: number | string;

@@ -66,6 +66,8 @@ You can report custom data along with the automatic data.
  
 Those will be visible in your user dashboard if you previously set an user ID.
 
+The module will remember past properties so you can use `Nucleus.setProps` multiple times without overwriting past props.
+
 Properties can either **numbers**, **strings** or **booleans**. 
 Nested properties or arrays aren't supported at the moment.
 
@@ -75,6 +77,14 @@ Nucleus.setProps({
 	name: 'Richard Hendricks',
 	jobType: 'CEO'
 })
+```
+
+Enable overwrite: set the second parameter as true to overwrite past properties. 
+
+```
+Nucleus.setProps({
+	age: 23
+}, true)
 ```
 
 ### Events
