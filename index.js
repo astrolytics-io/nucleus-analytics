@@ -4,7 +4,6 @@ const { remote, app } = require('electron')
 const request = require('request')
 const os = require('os')
 const WebSocket = require('ws')
-
 const Store = require('electron-store')
 const store = new Store({
 	encryptionKey: 's0meR1nd0mK3y', // for obfuscation
@@ -41,13 +40,17 @@ let useInDev = true
 let enableLogs = false
 let disableTracking = false
 let queue = []
-let cache = {}
+
 let reportDelay = 20
 let onlyMainProcess = false
 let persist = false // Disabled by default as lots of events can crash the app (by writing too much to file)
 
-let tempUserEvents = {}
+let props = {}
+if (store.has('nucleus-props')) {
+	props = store.get('nucleus-props')
+}
 
+let cache = {}
 if (store.has('nucleus-cache')) {
 	cache = store.get('nucleus-cache')
 } else {
@@ -95,9 +98,7 @@ let Nucleus = (initAppId, options = {}) => {
 
 			// Make sure we stay in sync
 			// Keeps live list of users updated too
-			setInterval(() => {
-				reportData()
-			}, reportDelay * 1000)
+			setInterval(reportData, reportDelay * 1000)
 
 			if (!utils.isRenderer()) {
 
@@ -166,7 +167,7 @@ let Nucleus = (initAppId, options = {}) => {
 
 		queue.push(eventData)
 
-		if (persist) store.set('queue', queue)
+		if (persist) store.set('nucleus-queue', queue)
 	}
 
 	// DEPRECATED
