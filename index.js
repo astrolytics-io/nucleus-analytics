@@ -1,27 +1,36 @@
 'use strict';
 
-const { remote, app } = require('electron')
+let remote = null
+let app = null
+
+try {
+	remote = require('electron').remote
+	app = require('electron').app
+} catch (e) {
+	// Electron not available
+	console.warn("Nucleus: version of your app couldn't be autodetected, set it manually.")
+}
+
 const request = require('request')
 const os = require('os')
 const WebSocket = require('ws')
-const Store = require('electron-store')
-const store = new Store({
+const Conf = require('conf')
+const store = new Conf({
 	encryptionKey: 's0meR1nd0mK3y', // for obfuscation
-	name: 'nucleus' // Doesn't interferate if app is using electron-store
 })
 
 const utils = require('./utils.js')
 
-const appObject = remote ? remote.app : app // Depends on process
+const electronApp = remote ? remote.app : app // Depends on process
 
 const moduleVersion = require('./package.json').version
 
 /// Data reported to server
 let userId = null
 let machineId = require('node-machine-id').machineIdSync()
-let platform = process.platform.replace("darwin", "mac")
-let version = utils.isDevMode() ? '0.0.0' : appObject.getVersion()
-let language = typeof navigator !== 'undefined' ? (navigator.language || navigator.userLanguage).substring(0,2) : null
+let platform = process.platform
+let version = (utils.isDevMode() || !electronApp) ? '0.0.0' : electronApp.getVersion()
+let locale = require('os-locale').sync()
 let arch = process.arch
 let sessionId = null
 let osVersion = os.release()
@@ -34,7 +43,6 @@ let apiUrl = "app.nucleus.sh"
 let ws = null
 let appId = null
 let latestVersion = '0.0.0'
-let newUser = false
 let alertedUpdate = false
 let useInDev = true
 let enableLogs = false
@@ -53,8 +61,6 @@ if (store.has('nucleus-props')) {
 let cache = {}
 if (store.has('nucleus-cache')) {
 	cache = store.get('nucleus-cache')
-} else {
-	newUser = true
 }
 
 let moduleObject = {}
@@ -68,9 +74,10 @@ let Nucleus = (initAppId, options = {}) => {
 
 		useInDev = !(options.disableInDev)
 
-		if (options.autoUserId) userId = generateUserId()
+		if (options.autoUserId) userId = utils.generateUserId()
 		if (options.version) version = options.version
-		if (options.language) language = options.language
+		if (options.locale) locale = options.locale
+		if (options.language) locale = options.language
 		if (options.endpoint) apiUrl = options.endpoint
 		if (options.devMode) dev = options.devMode
 		if (options.enableLogs) enableLogs = options.enableLogs
@@ -105,7 +112,7 @@ let Nucleus = (initAppId, options = {}) => {
 				// Force tracking of init if we're only going to use
 				// the module in the main
 				if (onlyMainProcess) {
-					this.track('init')
+					this.track(null, null, 'init')
 					reportData()
 				}
 
@@ -113,7 +120,7 @@ let Nucleus = (initAppId, options = {}) => {
 			}
 
 			// The rest is only for renderer process
-			this.track('init')
+			this.track(null, null, 'init')
 			reportData()
 
 			if (!options.disableErrorReports) {
@@ -128,17 +135,18 @@ let Nucleus = (initAppId, options = {}) => {
 	}
 
 
-	moduleObject.track = (eventName, data) => {
+	moduleObject.track = (eventName, data=undefined, type='event') => {
 
 		if (!eventName || disableTracking || (utils.isDevMode() && !useInDev)) return
 
-		if (enableLogs) console.log('Nucleus: adding to queue: '+eventName)
+		if (enableLogs) console.log('Nucleus: adding to queue: ' + (eventName || type))
 
 		// An ID for the event so when the server returns it we know it was reported
 		let tempId = Math.floor(Math.random() * 1e6) + 1
 
 		let eventData = {
-			event: eventName,
+			type: type,
+			name: eventName,
 			date: new Date(),
 			appId: appId,
 			id: tempId,
@@ -149,11 +157,12 @@ let Nucleus = (initAppId, options = {}) => {
 		}
 
 		let extra = {
+			client: 'nodejs',
 			platform: platform,
 			osVersion: osVersion,
 			totalRam: totalRam,
 			version: version,
-			language: language,
+			locale: locale,
 			process: utils.isRenderer() ? 'renderer' : 'main',
 			arch: arch,
 			moduleVersion: moduleVersion
@@ -198,30 +207,23 @@ let Nucleus = (initAppId, options = {}) => {
 	}
 
 	// Not arrow for this
-	moduleObject.trackError = function(type, err) {
+	moduleObject.trackError = function(name, err) {
 		// Convert Error to normal object, so we can stringify it
 		let errObject = {
 			stack: err.stack || err,
 			message: err.message || err
 		}
 
-		this.track('error:'+type, errObject)
+		this.track(name, errObject, 'error')
 
-		if (typeof this.onError === 'function') this.onError(type, err)
+		if (typeof this.onError === 'function') this.onError(name, err)
 	}
-
 
 	// Get the custom JSON data set from the dashboard
 	moduleObject.getCustomData = (callback) => {
 
 		// If it's already cached, pull it from here
-		if (cache.customData) return callback(null, cache.customData)
-
-		// Else go pull it on the server
-		request({ url: `http${dev ? '' : 's'}://${apiUrl}/app/${appId}/customdata`, method: 'GET', json: true }, (err, res, body) => {
-			callback(err || body.error, body)
-		})
-
+		return callback(null, cache.customData)
 	}
 
 	// So we can follow this user actions
@@ -232,7 +234,7 @@ let Nucleus = (initAppId, options = {}) => {
 
 		userId = newId
 
-		this.track('nucleus:userid') 
+		this.track(null, null, 'userid') 
 
 		return true
 	}
@@ -246,7 +248,7 @@ let Nucleus = (initAppId, options = {}) => {
 		else props = newProps
 			
 		store.set('nucleus-props', props)
-		this.track('nucleus:props', props)
+		this.track(null, props, 'props')
 	}
 
 	moduleObject.disableTracking = () => {
@@ -283,13 +285,6 @@ let Nucleus = (initAppId, options = {}) => {
 	return moduleObject
 }
 
-const generateUserId = () => {
-	const hostname = os.hostname()
-	const username = os.userInfo().username
-
-	return username + '@' + hostname
-}
-
 const sendQueue = () => {
 
 	// Connection not opened?
@@ -308,7 +303,7 @@ const sendQueue = () => {
 		// only the machine id is needed to derive the other informations
 		
 		const heartbeat = {
-			event: 'nucleus:heartbeat',
+			type: 'heartbeat',
 			machineId: machineId
 		}
 

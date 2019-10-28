@@ -1,11 +1,16 @@
-# electron-nucleus [![npm](https://img.shields.io/npm/v/electron-nucleus.svg)](https://www.npmjs.com/package/electron-nucleus)
-Analytics, licensing and bug reports for Electron using [Nucleus](https://nucleus.sh).
+# nodejs-nucleus [![npm](https://img.shields.io/npm/v/nodejs-nucleus.svg)](https://www.npmjs.com/package/nodejs-nucleus)
 
-We tried to make it as simple as possible to report the data you need to analyze your app and improve it.
+Analytics, licensing and bug reports for Node.js, Electron and NW.js.
+
+We made it as simple as possible to report the data you need to analyze your app and improve it.
 
 To start using this module, sign up and get an app ID on the [Nucleus website](https://nucleus.sh). 
 
-This module is mainly working on the renderer process. It should still be initiated in the main process for catching all errors (or reporting events inside it). However, if you only have access to the main process you can still use Nucleus as explained below.
+On Electron:
+
+This module is mainly working on the renderer process. It should still be initiated in the main process for catching all errors (or reporting events inside it). 
+
+However, if you only have access to the main process you can still use Nucleus as explained below.
 
 
 ## Installation
@@ -49,16 +54,40 @@ const Nucleus = require("electron-nucleus")("<Your App Id>", {
 	autoUserId: false, // auto gives the user an id: username@hostname
 	userId: 'user@email.com', // set an identifier for this user
 	persist: false, // cache events to disk if offline to report later
-	version: '1.3.9', // set a custom version for your app (default: autodetected)
-	language: 'es' // specify a custom language (default: autodetected)
+	version: '1.3.9', // set a custom version for your app (autodetected on Electron)
+	locale: 'es_ES' // specify a custom language (autodetected)
 })
 ```
 
-By default **version**, **language** and **country** are autodetected but you can overwrite them.
+If your app is Electron-based, **version** will be detected but otherwise set it manually.
 
 Where options is an object, **each property is optional**. You can start using the module with just the app ID.
 
 **Note** : when running in development, the app version will be '0.0.0'
+
+
+### Identify your users
+
+You can track specific users actions on the 'User Explorer' section of your dashboard.
+
+For that, you can supply an `userId` when initing the Nucleus module. 
+
+It can be your own generated ID, an email, username... etc.
+
+```javascript
+const Nucleus = require("electron-nucleus")("<Your App Id>", {
+	userId: 'someUniqueUserId'
+})
+```
+
+Or if you don't know it on start, you can add it later with:
+
+```javascript
+Nucleus.setUserId('someUniqueUserId')
+```
+
+Alternatively, set the `autoUserId` option of the module to `true`  to automatically assign the user an ID based on his username and hostname.
+
 
 ### Track custom data
 
@@ -81,7 +110,7 @@ Nucleus.setProps({
 
 Enable overwrite: set the second parameter as true to overwrite past properties. 
 
-```
+```javascript
 Nucleus.setProps({
 	age: 23
 }, true)
@@ -133,28 +162,6 @@ This change won't persist after restarts so you have to handle the saving of the
 
 You can also supply a `disableTracking: true` option to the module on start if you want to directly prevent tracking.
 
-
-### Identify your users
-
-You can track specific users actions on the 'User Explorer' section of your dashboard.
-
-For that, you can supply an `userId` when initing the Nucleus module. 
-
-It can be your own generated ID, an email, username... etc.
-
-```javascript
-const Nucleus = require("electron-nucleus")("<Your App Id>", {
-	userId: 'someUniqueUserId'
-})
-```
-
-Or if you don't know it on start, you can add it later with:
-
-```javascript
-Nucleus.setUserId('someUniqueUserId')
-```
-
-Alternatively, set the `autoUserId` option of the module to `true`  to automatically assign the user an ID based on his username and hostname.
 
 ### Errors
 
