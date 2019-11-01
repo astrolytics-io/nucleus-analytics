@@ -1,99 +1,74 @@
 'use strict';
 
-let remote = null
-let app = null
-
-try {
-	remote = require('electron').remote
-	app = require('electron').app
-} catch (e) {
-	// Electron not available
-	console.warn("Nucleus: version of your app couldn't be autodetected, set it manually.")
-}
-
-const request = require('request')
-const os = require('os')
-const WebSocket = require('ws')
-const Conf = require('conf')
-const store = new Conf({
-	encryptionKey: 's0meR1nd0mK3y', // for obfuscation
-})
-
 const utils = require('./utils.js')
 
-const electronApp = remote ? remote.app : app // Depends on process
-
-const moduleVersion = require('./package.json').version
+/* Either from browser or Node 'ws' */
+const WebSocket = utils.getWsClient()
+const store 	= utils.getStore()
 
 /// Data reported to server
-let userId = null
-let machineId = require('node-machine-id').machineIdSync()
-let platform = process.platform
-let version = (utils.isDevMode() || !electronApp) ? '0.0.0' : electronApp.getVersion()
-let locale = require('os-locale').sync()
-let arch = process.arch
-let sessionId = null
-let osVersion = os.release()
-let totalRam = os.totalmem() / Math.pow(1024, 3)
+const localData = {
+	appId: null,
+	userId: null,
+	machineId: null,
+	version: '0.0.0',
+	locale: null,
+	platform: null,
+	arch: require('arch')(), // Module works both browser and node
+	sessionId: null,
+	osVersion: null,
+	totalRam: null,
+	moduleVersion: require('./package.json').version
+}
+
+// Options that can be changed by the user
+let endpoint 		= "wss://app.nucleus.sh"
+let useInDev 		= true
+let debug 			= false
+let trackingOff 	= false
+let reportInterval 	= 20
+let persist 		= false // Disabled by default as lots of events can cause crash by writing too much
 
 // All the stuff we'll need later globally
-let dev = false // Internal use only, for developing with Nucleus dev
-let apiUrl = "app.nucleus.sh"
+let ws 				= null
+let latestVersion 	= '0.0.0'
+let gotInitted 		= false 
+let alertedUpdate 	= false
 
-let ws = null
-let appId = null
-let latestVersion = '0.0.0'
-let alertedUpdate = false
-let useInDev = true
-let enableLogs = false
-let disableTracking = false
-let queue = []
+let queue 			= []
+let props 			= store.get('nucleus-props') || {}
+let cache 			= store.get('nucleus-cache') || {}
 
-let reportDelay = 20
-let onlyMainProcess = false
-let persist = false // Disabled by default as lots of events can crash the app (by writing too much to file)
-
-let props = {}
-if (store.has('nucleus-props')) {
-	props = store.get('nucleus-props')
-}
-
-let cache = {}
-if (store.has('nucleus-cache')) {
-	cache = store.get('nucleus-cache')
-}
-
-let moduleObject = {}
-
-let Nucleus = (initAppId, options = {}) => {
+const Nucleus = {
 
 	// not arrow function for access to this
-	moduleObject.init = function(initAppId, options = {}) {
+	init: function(initAppId, options = {}) {
 
-		appId = initAppId
+		autoDetectData()
 
-		useInDev = !(options.disableInDev)
+		localData.appId = initAppId
 
-		if (options.autoUserId) userId = utils.generateUserId()
-		if (options.version) version = options.version
-		if (options.locale) locale = options.locale
-		if (options.language) locale = options.language
-		if (options.endpoint) apiUrl = options.endpoint
-		if (options.devMode) dev = options.devMode
-		if (options.enableLogs) enableLogs = options.enableLogs
-		if (options.disableTracking) disableTracking = options.disableTracking
-		if (options.reportDelay) reportDelay = options.reportDelay
-		if (options.onlyMainProcess) onlyMainProcess = options.onlyMainProcess
+		useInDev = !options.disableInDev
+		debug = !!options.debug
+		trackingOff = !!options.disableTracking
+
+		if (options.autoUserId) localData.userId = utils.generateUserId()
+		if (options.endpoint) endpoint = options.endpoint
+		
+		if (options.reportInterval) reportInterval = options.reportInterval
 		if (options.persist) persist = options.persist
-		if (options.userId) userId = options.userId
+
+		localData.sessionId = Math.floor(Math.random() * 1e4) + 1
 
 		if (persist && store.has('nucleus-queue')) queue = store.get('nucleus-queue')
 
-		sessionId = Math.floor(Math.random() * 1e4) + 1
+		if (localData.appId && (!utils.isDevMode() || useInDev)) {
 
-		if (appId && (!utils.isDevMode() || useInDev)) {
+			// Make sure we stay in sync
+			// Keeps live list of users updated too
+			setInterval(reportData, reportInterval * 1000)
 
-			if (!options.disableErrorReports) {
+			if (!options.disableErrorReports && typeof process !== 'undefined') {
 				process.on('uncaughtException', err => {
 					this.trackError('uncaughtException', err)
 				})
@@ -103,25 +78,8 @@ let Nucleus = (initAppId, options = {}) => {
 				})
 			}
 
-			// Make sure we stay in sync
-			// Keeps live list of users updated too
-			setInterval(reportData, reportDelay * 1000)
-
-			if (!utils.isRenderer()) {
-
-				// Force tracking of init if we're only going to use
-				// the module in the main
-				if (onlyMainProcess) {
-					this.track(null, null, 'init')
-					reportData()
-				}
-
-				return
-			}
-
-			// The rest is only for renderer process
-			this.track(null, null, 'init')
-			reportData()
+			// Only if we are in a browser or renderer process
+			if (typeof window === 'undefined') return
 
 			if (!options.disableErrorReports) {
 				window.onerror = (message, file, line, col, err) => {
@@ -132,82 +90,68 @@ let Nucleus = (initAppId, options = {}) => {
 			// Automatically send data when back online
 			window.addEventListener('online', reportData)
 		}
-	}
+	},
 
+	/* Should only be ran once per session */
+	appStarted: function() {
+		gotInitted = true
 
-	moduleObject.track = (eventName, data=undefined, type='event') => {
+		this.track(null, null, 'init')
 
-		if (!eventName || disableTracking || (utils.isDevMode() && !useInDev)) return
+		reportData()
+	},
 
-		if (enableLogs) console.log('Nucleus: adding to queue: ' + (eventName || type))
+	track: (eventName, data=undefined, type='event') => {
+
+		if (!localData.appId) return logError('Missing APP ID before we can start tracking.')
+ 
+		if (!eventName && !type) return
+		if (trackingOff || (utils.isDevMode() && !useInDev)) return
+
+		log('adding to queue: ' + (eventName || type))
 
 		// An ID for the event so when the server returns it we know it was reported
 		let tempId = Math.floor(Math.random() * 1e6) + 1
+
+		if (type === 'init' && props) data = props
 
 		let eventData = {
 			type: type,
 			name: eventName,
 			date: new Date(),
-			appId: appId,
+			appId: localData.appId,
 			id: tempId,
-			userId: userId,
-			machineId: machineId,
-			sessionId: sessionId,
-			payload: data || undefined
-		}
-
-		let extra = {
-			client: 'nodejs',
-			platform: platform,
-			osVersion: osVersion,
-			totalRam: totalRam,
-			version: version,
-			locale: locale,
-			process: utils.isRenderer() ? 'renderer' : 'main',
-			arch: arch,
-			moduleVersion: moduleVersion
+			userId: localData.userId,
+			machineId: localData.machineId,
+			sessionId: localData.sessionId,
+			payload: data
 		}
 
 		// So we don't send unnecessary data when not needed 
 		// (= first event, and on error)
-		if (['init'].includes(eventName) || eventName.includes("error:")) {
+		if (type && ['init', 'error'].includes(type)) {
+
+			let extra = {
+				client: 'nodejs',
+				platform: localData.platform,
+				osVersion: localData.osVersion,
+				totalRam: localData.totalRam,
+				version: localData.version,
+				locale: localData.locale,
+				arch: localData.arch,
+				moduleVersion: localData.moduleVersion
+			}
+
 			Object.keys(extra).forEach((key) => eventData[key] = extra[key] )
 		}
 
 		queue.push(eventData)
 
 		if (persist) store.set('nucleus-queue', queue)
-	}
-
-	// DEPRECATED
-	// Licensing integration in Nucleus
-	moduleObject.checkLicense = (license, callback) => {
-
-		// No license was supplied
-		if (!license || license.trim() == '')  {
-			return callback(null, {
-				valid: false,
-				status: 'nolicense'
-			})
-		}
-
-		// Prepare license with needed data to be sent to server
-		let data = {
-			key: license.trim(),
-			userId: userId,
-			machineId: machineId,
-			platform: platform,
-			version: version
-		}
-
-		// Ask for the server to validate it
-		request({ url: `http${dev ? '' : 's'}://${apiUrl}/app/${appId}/license/validate`, method: 'POST', json: {data: data} }, (err, res, body) => {
-			callback(err || body.error, body)
-		})
-	}
+	},
 
 	// Not arrow for this
-	moduleObject.trackError = function(name, err) {
+	trackError: function(name, err) {
 		// Convert Error to normal object, so we can stringify it
 		let errObject = {
 			stack: err.stack || err,
@@ -217,60 +161,68 @@ let Nucleus = (initAppId, options = {}) => {
 		this.track(name, errObject, 'error')
 
 		if (typeof this.onError === 'function') this.onError(name, err)
-	}
+	},
 
 	// Get the custom JSON data set from the dashboard
-	moduleObject.getCustomData = (callback) => {
+	getCustomData: (callback) => {
 
 		// If it's already cached, pull it from here
 		return callback(null, cache.customData)
-	}
+	},
 
 	// So we can follow this user actions
-	moduleObject.setUserId = function(newId) {
+	setUserId: function(newId) {
 		if (!newId || newId.trim() === '') return false
 
-		if (enableLogs) console.log('Nucleus: user id set to '+newId)
+		log('user id set to '+newId)
 
-		userId = newId
+		localData.userId = newId
 
-		this.track(null, null, 'userid') 
-
-		return true
-	}
+		// only send event if we didn't init, else will be passed with init
+		if (gotInitted) this.track(null, null, 'userid') 
+	},
 
 	// Allows to set custom properties to users
-	moduleObject.setProps = function(newProps, overwrite) {
-		if (newProps.userId) userId = newProps.userId
+	setProps: function(newProps, overwrite) {
+
+		// If it's part of the localData object overwrite there
+		for (let prop in newProps) {
+			if (localData[prop]) {
+				localData[prop] = newProps[prop]
+				newProps[prop] = null
+			}
+		}
 
 		// Merge past and new props
 		if (!overwrite) props = Object.assign(props, newProps)
 		else props = newProps
 			
 		store.set('nucleus-props', props)
-		this.track(null, props, 'props')
-	}
 
-	moduleObject.disableTracking = () => {
-		if (enableLogs) console.log('Nucleus: tracking disabled')
+		// only send event if we didn't init, else will be passed with init
+		if (gotInitted) this.track(null, props, 'props')
+	},
 
-		disableTracking = true
-	}
+	disableTracking: () => {
+		log('tracking disabled')
 
-	moduleObject.enableTracking = () => {
-		if (enableLogs) console.log('Nucleus: tracking enabled')
+		trackingOff = true
+	},
 
-		disableTracking = false
-	}
+	enableTracking: () => {
+		log('tracking enabled')
+
+		trackingOff = false
+	},
 
 	// Checks locally if the current version is inferior to 'latest'
 	// Called if the server returned a 'latest' version
-	moduleObject.checkUpdates = function() {
-		let currentVersion = version
+	checkUpdates: function() {
+		let currentVersion = localData.version
 
 		let updateAvailable = !!(utils.compareVersions(currentVersion, latestVersion) < 0)
 
-		// We call 'onUpdate' if the user created this function
+		// We call 'Nucleus.onUpdate' if the user created this function
 		if (!alertedUpdate && updateAvailable && typeof this.onUpdate === 'function') {
 			// So we don't trigger it 1000 times
 			alertedUpdate = true
@@ -278,11 +230,6 @@ let Nucleus = (initAppId, options = {}) => {
 			this.onUpdate(latestVersion)
 		}
 	}
-
-	// So it inits if we directly pass the app id
-	if (initAppId) moduleObject.init(initAppId, options)
-
-	return moduleObject
 }
 
 const sendQueue = () => {
@@ -299,22 +246,19 @@ const sendQueue = () => {
 		
 		// Nothing to report, send a heartbeat anyway
 		// (like if the connection was lost and is back)
-		// this is needed to tell the server which user this is
-		// only the machine id is needed to derive the other informations
+		// only machine id is needed to derive the other infos server-side
 		
 		const heartbeat = {
 			type: 'heartbeat',
-			machineId: machineId
+			machineId: localData.machineId
 		}
 
 		return ws.send(JSON.stringify({ data: [ heartbeat ] }))
 	}
 
-	let payload = {
-		data: queue
-	}
+	const payload = { data: queue }
 
-	if (enableLogs) console.log('Nucleus: sending cached events ('+queue.length+')')
+	log('sending cached events ('+queue.length+')')
 
 	ws.send(JSON.stringify(payload))
 }
@@ -325,30 +269,27 @@ const reportData = () => {
 
 	// If nothing to report no need to reopen connection if in main process
 	// Except if we only report from main process
-	if (!queue.length && (!utils.isRenderer() && !onlyMainProcess)) return
+	if (!queue.length && !gotInitted) return
 
-	if (disableTracking) return
+	if (trackingOff) return
 
 	// If socket was closed for whatever reason re-open it
-
 	if (!ws || ws.readyState !== WebSocket.OPEN) {
 
-		if (enableLogs) console.warn('Nucleus: no connection to server. Opening it.')
+		log('no connection to server. Opening it.')
 
-		// Wss (https equivalent) if production
-		ws = new WebSocket(`ws${dev ? '' : 's'}://${apiUrl}/app/${appId}/track`)
+		ws = new WebSocket(`${ endpoint }/app/${ localData.appId }/track`)
 
-		// We are going to need to open this later
-		ws.on('error', (e) => {
-			if (enableLogs) console.warn(e)
-		})
-		ws.on('close', (e) => {
-			if (enableLogs) console.warn(e)
-		})
+		ws.onerror = (e)=> {
+			logError(`ws ${e.code}: ${e.reason}`)
+		}
+		ws.onclose = (e) => {
+			logError(`ws ${e.code}: ${e.reason}`)
+		}
 
-		ws.on('message', messageFromServer)
+		ws.onmessage = messageFromServer
 
-		ws.on('open', sendQueue )
+		ws.onopen = sendQueue
 	}
 
 	if (queue.length) sendQueue()
@@ -358,11 +299,12 @@ const messageFromServer = (message) => {
 
 	let data = {}
 
+	log('server said '+message.data)
+
 	try {
-		data = JSON.parse(message)
-		if (enableLogs) console.log('Nucleus: server said', data)
+		data = JSON.parse(message.data)
 	} catch (e) {
-		if (enableLogs) console.warn('Nucleus: could not parse message from server.')
+		logError('could not parse message from server.')
 		return
 	}
 
@@ -376,17 +318,69 @@ const messageFromServer = (message) => {
 		// Get the app's latest version
 		latestVersion = data.latestVersion
 
-		moduleObject.checkUpdates()
+		Nucleus.checkUpdates()
 	}
 
 	if (data.reportedIds || data.confirmation) {
 		// Data was successfully reported, we can empty the queue
-		if (enableLogs) console.log('Nucleus: server successfully registered data')
+		log('server successfully registered our data.')
 
 		if (data.reportedIds) queue = queue.filter(e => !data.reportedIds.includes(e.id))
 		else if (data.confirmation) queue = [] // Legacy handling
 
 		if (persist) store.set('nucleus-queue', queue)
+	}
+
+}
+
+const log = (message) => {
+	if (debug) console.log('Nucleus:', message)
+}
+
+const logError = (message) => {
+	if (debug) console.warn('Nucleus Error:', message)
+}
+
+const autoDetectData = () => {
+
+	/* Try to find version with Electron */
+	try {
+		const { remote, app } = require('electron')
+		const electronApp = remote ? remote.app : app // Depends on process
+
+		localData.version = utils.isDevMode() ? '0.0.0' : electronApp.getVersion()
+	} catch (e) {
+		// Electron not available
+		// console.warn("Nucleus: version of your app couldn't be autodetected, set it manually.")
+	}
+
+	/* Try to find OS stuff */
+	/* And fallback to browser info else */
+	try {
+	
+		const os = require('os')
+		localData.platform 	= os.type()
+		localData.osVersion = os.release()
+		localData.totalRam 	= os.totalmem() / Math.pow(1024, 3)
+		localData.locale 	= require('os-locale').sync()
+		localData.machineId = require('node-machine-id').machineIdSync()
+	
+	} catch (e) {
+
+		if (typeof navigator !== 'undefined') {
+			const osInfo = utils.getNavigatorOS()
+ 
+			localData.platform 	= osInfo.name
+			localData.osVersion = osInfo.version
+			localData.locale 	= navigator.language
+			localData.totalRam 	= navigator.deviceMemory
+		}
+	}
+
+	let undetectedProps = Object.keys(localData).filter(prop => !localData[prop])
+
+	if (undetectedProps.length) {
+		logError(`Some properties couldn't be autodetected: ${undetectedProps.join(',')}. Set them manually or some data will be miss from the dashboard.`)
 	}
 
 }

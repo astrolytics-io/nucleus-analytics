@@ -1,24 +1,47 @@
-const os = require('os')
-
 module.exports = {
-
-	isRenderer: () => {
-		/// Thanks to jprichardson/is-electron-renderer
-		if (typeof process === 'undefined' || !process) return true // running in a web browser or node-integration is disabled
-		if (!process.type) return false // We're in node.js somehow
-		return process.type === 'renderer'
-	},
 	isDevMode: () => { 
-		//  From sindresorhus/electron-is-dev, thanks to the author
-		const getFromEnv = parseInt(process.env.ELECTRON_IS_DEV, 10) === 1
-		const isEnvSet = 'ELECTRON_IS_DEV' in process.env
-		return isEnvSet ? getFromEnv : (process.defaultApp || /node_modules[\\/]electron[\\/]/.test(process.execPath))
+		try {
+			//  From sindresorhus/electron-is-dev, thanks to the author
+			const getFromEnv = parseInt(process.env.ELECTRON_IS_DEV, 10) === 1
+			const isEnvSet = 'ELECTRON_IS_DEV' in process.env
+			return isEnvSet ? getFromEnv : (process.defaultApp || /node_modules[\\/]electron[\\/]/.test(process.execPath))
+		} catch(e) {
+			console.warn("Nucleus: Could not detect if we're in dev mode, defaulting to false.")
+			return false
+		}
 	},
 	generateUserId: () => {
-		const hostname = os.hostname()
-		const username = os.userInfo().username
+		try {
+			const os = require('os')
+			const hostname = os.hostname()
+			const username = os.userInfo().username
 
-		return username + '@' + hostname
+			return username + '@' + hostname
+		} catch(e) {
+			console.warn('Nucleus: Could not autodetect an user id.')
+			return null
+		}
+	},
+	getStore: () => {
+		try {
+			/* For node, fallback to browser storage */
+			const Conf = require('conf')
+			const store = new Conf({
+				encryptionKey: 's0meR1nd0mK3y', // for obfuscation
+			})
+
+			return store
+		} catch(e) {
+			return {
+				get: (key) => {
+					return JSON.parse(localStorage.getItem(key))
+				},
+				set: (key, value) => {
+					localStorage.setItem(key, JSON.stringify(value))
+					return
+				}
+			}
+		}
 	},
 	compareVersions (a, b) {
 		var i, diff
@@ -33,6 +56,68 @@ module.exports = {
 		}
 
 		return segmentsA.length - segmentsB.length
+	},
+	getWsClient () {
+		/* If natively available return it */
+		if (typeof global !== 'undefined') return global.WebSocket || require('ws')
+		if (typeof window !== 'undefined') return window.WebSocket || require('ws')
+		return require('ws')
+	},
+	getNavigatorOS: () => {
+		const nAgt = navigator.userAgent
+		let osVersion = null
+		let os = null
+		// system
+
+		const clientStrings = [
+			{ s: 'Windows 3.11', r: /Win16/ },
+			{ s: 'Windows 95', r: /(Windows 95|Win95|Windows_95)/ },
+			{ s: 'Windows ME', r: /(Win 9x 4.90|Windows ME)/ },
+			{ s: 'Windows 98', r: /(Windows 98|Win98)/ },
+			{ s: 'Windows CE', r: /Windows CE/ },
+			{ s: 'Windows 2000', r: /(Windows NT 5.0|Windows 2000)/ },
+			{ s: 'Windows XP', r: /(Windows NT 5.1|Windows XP)/ },
+			{ s: 'Windows Server 2003', r: /Windows NT 5.2/ },
+			{ s: 'Windows Vista', r: /Windows NT 6.0/ },
+			{ s: 'Windows 7', r: /(Windows 7|Windows NT 6.1)/ },
+			{ s: 'Windows 8.1', r: /(Windows 8.1|Windows NT 6.3)/ },
+			{ s: 'Windows 8', r: /(Windows 8|Windows NT 6.2)/ },
+			{ s: 'Windows NT 4.0', r: /(Windows NT 4.0|WinNT4.0|WinNT|Windows NT)/ },
+			{ s: 'Windows ME', r: /Windows ME/ },
+			{ s: 'Android', r: /Android/ },
+			{ s: 'Open BSD', r: /OpenBSD/ },
+			{ s: 'Sun OS', r: /SunOS/ },
+			{ s: 'Linux', r: /(Linux|X11)/ },
+			{ s: 'iOS', r: /(iPhone|iPad|iPod)/ },
+			{ s: 'Mac OS X', r: /Mac OS X/ },
+			{ s: 'Mac OS', r: /(MacPPC|MacIntel|Mac_PowerPC|Macintosh)/ },
+			{ s: 'QNX', r: /QNX/ },
+			{ s: 'UNIX', r: /UNIX/ },
+			{ s: 'BeOS', r: /BeOS/ },
+			{ s: 'OS/2', r: /OS\/2/ },
+		]
+
+		for (let id in clientStrings) {
+			let cs = clientStrings[id]
+			if (cs.r.test(nAgt)) {
+				os = cs.s
+				break
+			}
+		}
+
+		if (/Windows/.test(os)) {
+			osVersion = /Windows (.*)/.exec(os)[1]
+			os = 'Windows'
+		}
+
+		if (/Mac OS X/.test(os)) {
+			osVersion = /Mac OS X (10[._\d]+)/.exec(nAgt)[1]
+		}
+
+		return {
+			name: os,
+			version: osVersion
+		}
 	}
 
 }

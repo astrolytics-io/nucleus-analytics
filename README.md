@@ -8,10 +8,18 @@ To start using this module, sign up and get an app ID on the [Nucleus website](h
 
 On Electron:
 
-This module is mainly working on the renderer process. It should still be initiated in the main process for catching all errors (or reporting events inside it). 
+This module works in both the renderer and the main process. 
+However be sure to only call the `appStarted()` method once per session (in only one process) or you'll find duplicate data in the dashboard.
 
-However, if you only have access to the main process you can still use Nucleus as explained below.
+<!--
+# 3.0.0 Breaking changes:
 
+The version 3 of the module introce breaking changes, so be careful to update your integration before upgrading.
+
+- You now have to manually call the `init` and `appStarted` methods to start the analaytics session. This was because the previous way was confusing between processes.
+- The module is now 100% independent from Node and can run in an isolated browser context
+- Options were renamed 
+-->
 
 ## Installation
 
@@ -23,48 +31,58 @@ $ npm install electron-nucleus --save
 
 ## Usage
 
-Add the following code to import Nucleus **in the renderer process**:
-
-
-```javascript
-const Nucleus = require("electron-nucleus")("<Your App Id>")
-```
-
-Also add it to the main process if you need to report events from there.
-
-If you are only able to use Nucleus in the main process, you should set the `onlyMainProcess` option:
+Add the following code to import Nucleus:
 
 ```javascript
-const Nucleus = require("electron-nucleus")("<Your App Id>", { onlyMainProcess: true })
+const Nucleus = require("electron-nucleus")
+
+Nucleus.init("<Your App Id>")
+
+Nucleus.appStarted()
 ```
+
 
 Sign up and get a tracking ID for your app [here](https://nucleus.sh).
 
+Call the appStarted method *only one time* per session.
+
+If you use the module in both the main and renderer process, call `appStarted` only once.
 
 ### Options
 
 You can init Nucleus with options:
 
 ```javascript
-const Nucleus = require("electron-nucleus")("<Your App Id>", {
+const Nucleus = require("electron-nucleus")
+
+Nucleus.init("<Your App Id>", {
 	disableInDev: false, // disable module while in development (default: false)
 	disableTracking: false, // completely disable tracking
-	onlyMainProcess: false, // if you can only use Nucleus in the mainprocess
 	disableErrorReports: false, // disable errors reporting (default: false)
-	autoUserId: false, // auto gives the user an id: username@hostname
-	userId: 'user@email.com', // set an identifier for this user
+	autoUserId: false, // auto assign the user an id: username@hostname
 	persist: false, // cache events to disk if offline to report later
-	version: '1.3.9', // set a custom version for your app (autodetected on Electron)
-	locale: 'es_ES' // specify a custom language (autodetected)
+	debug: true // Show logs
 })
+
+Nucleus.appStarted()
 ```
 
-If your app is Electron-based, **version** will be detected but otherwise set it manually.
+**Each property is optional**. You can start using the module with just the app ID.
 
-Where options is an object, **each property is optional**. You can start using the module with just the app ID.
+The module will try to autodetect a maximum of data as possible but some can fail. It will tell you in the logs (be sure to set debug: true) which one fails to detect.
+
+You can also change the data, if you make sure to do it before the `appStarted` method.
+```javascript
+Nucleus.setProps({
+	version: '0.3.1',
+	language: 'fr'
+	// ...
+})
+
+Nucleus.appStarted()
+```
 
 **Note** : when running in development, the app version will be '0.0.0'
-
 
 ### Identify your users
 
@@ -75,12 +93,12 @@ For that, you can supply an `userId` when initing the Nucleus module.
 It can be your own generated ID, an email, username... etc.
 
 ```javascript
-const Nucleus = require("electron-nucleus")("<Your App Id>", {
+Nucleus.setProps({
 	userId: 'someUniqueUserId'
 })
 ```
 
-Or if you don't know it on start, you can add it later with:
+Or:
 
 ```javascript
 Nucleus.setUserId('someUniqueUserId')
@@ -89,7 +107,7 @@ Nucleus.setUserId('someUniqueUserId')
 Alternatively, set the `autoUserId` option of the module to `true`  to automatically assign the user an ID based on his username and hostname.
 
 
-### Track custom data
+### Add properties
 
 You can report custom data along with the automatic data.
  
@@ -115,6 +133,7 @@ Nucleus.setProps({
 	age: 23
 }, true)
 ```
+
 
 ### Events
 
@@ -200,23 +219,6 @@ Nucleus.onUpdate = (lastVersion) => {
 ```
 
 **Note** : when running in development, the app version will be '0.0.0', so you can test this by setting a higher version in your dashboard
-
-### License checking (legacy)
-
-You can check if a license (created via Nucleus's API) is valid with the following code:
-
-
-```javascript
-Nucleus.checkLicense('SOME_LICENSE', (err, license) => {
-	if (err) return console.error(err)
-
-	if (license.valid) {
-		console.log('License is valid :) Using policy '+license.policy)
-	} else {
-		console.log('License is invalid :(')
-	}
-})
-```
 
 ---
 Contact **hello@nucleus.sh** for any inquiry

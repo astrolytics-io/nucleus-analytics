@@ -1,5 +1,5 @@
 {
-  "name": "nodejs-nucleus",
+  "name": "nucleus-nodejs",
   "version": "3.0.0",
   "description": "Analytics and bug reporting for Electron and Node.js.",
   "main": "index.js",
@@ -28,11 +28,13 @@
   },
   "homepage": "https://nucleus.sh",
   "dependencies": {
-    "conf": "^6.1.0",
+    "arch": "^2.1.1"
+  },
+  "optionalDependencies": {
     "node-machine-id": "^1.1.12",
     "os-locale": "^4.0.0",
-    "request": "^2.88.0",
-    "ws": "^7.1.2"
+    "ws": "^7.1.2",
+    "conf": "^6.1.0"
   },
   "devDependencies": {
     "eslint": "^6.6.0",
