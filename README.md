@@ -1,15 +1,17 @@
 # nodejs-nucleus [![npm](https://img.shields.io/npm/v/nodejs-nucleus.svg)](https://www.npmjs.com/package/nodejs-nucleus)
 
-Analytics, licensing and bug reports for Node.js, Electron and NW.js.
+Analytics, licensing and bug reports for Node.js, Electron and NW.js desktop applications.
 
 We made it as simple as possible to report the data you need to analyze your app and improve it.
 
-To start using this module, sign up and get an app ID on the [Nucleus website](https://nucleus.sh). 
+To start using this module, sign up and get an app ID on [Nucleus.sh](https://nucleus.sh). 
 
-On Electron:
+<b>Electron:</b>
 
 This module works in both the renderer and the main process. 
 However be sure to only call the `appStarted()` method once per session (in only one process) or you'll find duplicate data in the dashboard.
+
+This module can even run in a browser outside of Node (for example in the Electron renderer process with Node Integration disabled).
 
 <!--
 # 3.0.0 Breaking changes:
@@ -26,34 +28,43 @@ The version 3 of the module introce breaking changes, so be careful to update yo
 Using npm:
 
 ```bash
-$ npm install electron-nucleus --save
+$ npm install nodejs-nucleus --save
 ```
 
 ## Usage
-
-Add the following code to import Nucleus:
-
-```javascript
-const Nucleus = require("electron-nucleus")
-
-Nucleus.init("<Your App Id>")
-
-Nucleus.appStarted()
-```
-
 
 Sign up and get a tracking ID for your app [here](https://nucleus.sh).
 
 Call the appStarted method *only one time* per session.
 
-If you use the module in both the main and renderer process, call `appStarted` only once.
+You only need to call `init` once per process.
+
+If you use the module in both the main and renderer process, make sure that you only call `appStarted` once.
+
+```javascript
+const Nucleus = require("nodejs-nucleus")
+
+Nucleus.init("<Your App Id>")
+
+// Optional: sets an user ID
+Nucleus.setUserId('richard_hendrix')
+
+// Required: Sends the first event to the server that app started
+Nucleus.appStarted()
+
+// Report things
+Nucleus.track("PLAYED_TRACK", {
+	trackName: 'My Awesome Song',
+	duration: 120
+})
+```
 
 ### Options
 
 You can init Nucleus with options:
 
 ```javascript
-const Nucleus = require("electron-nucleus")
+const Nucleus = require("nodejs-nucleus")
 
 Nucleus.init("<Your App Id>", {
 	disableInDev: false, // disable module while in development (default: false)
@@ -69,9 +80,12 @@ Nucleus.appStarted()
 
 **Each property is optional**. You can start using the module with just the app ID.
 
-The module will try to autodetect a maximum of data as possible but some can fail. It will tell you in the logs (be sure to set debug: true) which one fails to detect.
+The module will try to autodetect a maximum of data as possible but some can fail to detect (especially if in a Browser outside of Node).
+
+It will tell you in the logs (if you set `debug: true`) which one failed to detect.
 
 You can also change the data, if you make sure to do it before the `appStarted` method.
+
 ```javascript
 Nucleus.setProps({
 	version: '0.3.1',
@@ -104,7 +118,7 @@ Or:
 Nucleus.setUserId('someUniqueUserId')
 ```
 
-Alternatively, set the `autoUserId` option of the module to `true`  to automatically assign the user an ID based on his username and hostname.
+Alternatively, set the `autoUserId` option of the module to `true` to assign the user an ID based on his username and hostname.
 
 
 ### Add properties
@@ -134,7 +148,6 @@ Nucleus.setProps({
 }, true)
 ```
 
-
 ### Events
 
 After initializing Nucleus, you can send your own custom events.
@@ -143,9 +156,9 @@ After initializing Nucleus, you can send your own custom events.
 Nucleus.track("PLAYED_TRACK")
 ```
 
-They are a couple events that are reserved by Nucleus: `init`, `error:` and `nucleus:`. You shouldn't report events containing these strings.
+They are a couple event names that are reserved by Nucleus: `init`, `error:` and `nucleus:`. Don't report events containing these strings.
 
-#### Tracking with data
+#### Attach more data
 
 You can also add extra information to tracked events, as a JSON object.
 

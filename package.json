@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lyserio/nodejs-nucleus.git"
+    "url": "git+https://github.com/nucleus-sh/nucleus-nodejs.git"
   },
   "keywords": [
     "analytics",
@@ -21,10 +21,10 @@
     "nw.js",
     "electron"
   ],
-  "author": "Lyser.io",
-  "license": "ISC",
+  "author": "Nucleus.sh",
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/lyserio/nodejs-nucleus/issues"
+    "url": "https://github.com/nucleus-sh/nucleus-nodejs/issues"
   },
   "homepage": "https://nucleus.sh",
   "dependencies": {
