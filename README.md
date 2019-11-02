@@ -1,4 +1,4 @@
-# nodejs-nucleus [![npm](https://img.shields.io/npm/v/nodejs-nucleus.svg)](https://www.npmjs.com/package/nodejs-nucleus)
+# nucleus-nodejs [![npm](https://img.shields.io/npm/v/nucleus-nodejs.svg)](https://www.npmjs.com/package/nucleus-nodejs)
 
 Analytics, licensing and bug reports for Node.js, Electron and NW.js desktop applications.
 
@@ -28,7 +28,7 @@ The version 3 of the module introce breaking changes, so be careful to update yo
 Using npm:
 
 ```bash
-$ npm install nodejs-nucleus --save
+$ npm install nucleus-nodejs --save
 ```
 
 ## Usage
@@ -42,7 +42,7 @@ You only need to call `init` once per process.
 If you use the module in both the main and renderer process, make sure that you only call `appStarted` once.
 
 ```javascript
-const Nucleus = require("nodejs-nucleus")
+const Nucleus = require("nucleus-nodejs")
 
 Nucleus.init("<Your App Id>")
 
@@ -64,7 +64,7 @@ Nucleus.track("PLAYED_TRACK", {
 You can init Nucleus with options:
 
 ```javascript
-const Nucleus = require("nodejs-nucleus")
+const Nucleus = require("nucleus-nodejs")
 
 Nucleus.init("<Your App Id>", {
 	disableInDev: false, // disable module while in development (default: false)
