@@ -204,15 +204,13 @@ const Nucleus = {
 	},
 
 	disableTracking: () => {
-		log('tracking disabled')
-
 		trackingOff = true
+		log('tracking disabled')
 	},
 
 	enableTracking: () => {
-		log('tracking enabled')
-
 		trackingOff = false
+		log('tracking enabled')
 	},
 
 	// Checks locally if the current version is inferior to 'latest'

@@ -1,22 +1,27 @@
-// Type definitions for electron-nucleus
+// Type definitions for nucleus-nodejs
 // Project: https://github.com/nucleus-sh/nucleus-nodejs
 
 export interface Nucleus {
   init: ( 
     appId: string,
-    config?: {
-      /*  disable module while in development (default: false) */
+    options?: {
+      /* Enable logging (default: false) */
+      debug?: boolean;
+      /* disable module while in development (default: false) */
       disableInDev?: boolean;
-      /*  completely disable tracking (default: false) */
+      /* completely disable tracking (default: false) */
       disableTracking?: boolean;
-      /*  disable errors reporting (default: false) */
+      /* disable errors reporting (default: false) */
       disableErrorReports?: boolean;
-      /*  auto gives the user an id: username@hostname default: false) */
+      /* auto gives the user an id: username@hostname default: false) */
       autoUserId?: boolean;
-      /*  cache events to disk if offline to report later (default: false) */
+      /* cache events to disk if offline to report later (default: false) */
       persist?: boolean;
+      /* change how often (in s) events should be refreshed (default: 20s) */
+      reportInterval?: number;
     } 
   ) => void;
+  appStarted: () => void;
   setUserId: (id: number | string) => void;
   onError: (
     type: "uncaughtException" | "unhandledRejection" | "windowError",
@@ -40,6 +45,6 @@ export interface Nucleus {
   onUpdate: ( version: string ) => void;
 }
 
-declare const nucleus: {} => Nucleus;
+declare const nucleus: Nucleus;
 
 export default nucleus;
