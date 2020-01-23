@@ -15,8 +15,6 @@ export interface Nucleus {
       disableErrorReports?: boolean;
       /* auto gives the user an id: username@hostname default: false) */
       autoUserId?: boolean;
-      /* cache events to disk if offline to report later (default: false) */
-      persist?: boolean;
       /* change how often (in s) events should be refreshed (default: 20s) */
       reportInterval?: number;
     } 

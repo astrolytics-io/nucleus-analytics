@@ -1,10 +1,17 @@
 'use strict';
 
-const utils = require('./utils.js')
+const {
+	getWsClient,
+	getStore,
+	isDevMode,
+	getNavigatorOS,
+	generateUserId,
+	compareVersions
+} = require('./utils.js')
 
 /* Either from browser or Node 'ws' */
-const WebSocket = utils.getWsClient()
-const store 	= utils.getStore()
+const WebSocket = getWsClient()
+const store 	= getStore()
 
 /// Data reported to server
 const localData = {
@@ -27,7 +34,6 @@ let useInDev 		= true
 let debug 			= false
 let trackingOff 	= false
 let reportInterval 	= 20
-let persist 		= false // Disabled by default as lots of events can cause crash by writing too much
 
 // All the stuff we'll need later globally
 let ws 				= null
@@ -35,7 +41,7 @@ let latestVersion 	= '0.0.0'
 let gotInitted 		= false 
 let alertedUpdate 	= false
 
-let queue 			= []
+let queue 			= store.get('nucleus-queue') || []
 let props 			= store.get('nucleus-props') || {}
 let cache 			= store.get('nucleus-cache') || {}
 
@@ -52,19 +58,17 @@ const Nucleus = {
 		debug = !!options.debug
 		trackingOff = !!options.disableTracking
 
-		if (options.autoUserId) localData.userId = utils.generateUserId()
+		if (options.autoUserId) localData.userId = generateUserId()
 		if (options.endpoint) endpoint = options.endpoint
 		
 		if (options.reportInterval) reportInterval = options.reportInterval
-		if (options.persist) persist = options.persist
 
 		localData.sessionId = Math.floor(Math.random() * 1e4) + 1
 
-		if (persist && store.has('nucleus-queue')) queue = store.get('nucleus-queue')
-
-		if (localData.appId && (!utils.isDevMode() || useInDev)) {
+		if (localData.appId && (!isDevMode() || useInDev)) {
 
 			// Make sure we stay in sync
+			// And save regularly to disk the latest events
 			// Keeps live list of users updated too
 			setInterval(reportData, reportInterval * 1000)
 
@@ -106,7 +110,7 @@ const Nucleus = {
 		if (!localData.appId) return logError('Missing APP ID before we can start tracking.')
  
 		if (!eventName && !type) return
-		if (trackingOff || (utils.isDevMode() && !useInDev)) return
+		if (trackingOff || (isDevMode() && !useInDev)) return
 
 		log('adding to queue: ' + (eventName || type))
 
@@ -146,8 +150,6 @@ const Nucleus = {
 		}
 
 		queue.push(eventData)
-
-		if (persist) store.set('nucleus-queue', queue)
 	},
 
 	// Not arrow for this
@@ -218,7 +220,7 @@ const Nucleus = {
 	checkUpdates: function() {
 		let currentVersion = localData.version
 
-		let updateAvailable = !!(utils.compareVersions(currentVersion, latestVersion) < 0)
+		let updateAvailable = !!(compareVersions(currentVersion, latestVersion) < 0)
 
 		// We call 'Nucleus.onUpdate' if the user created this function
 		if (!alertedUpdate && updateAvailable && typeof this.onUpdate === 'function') {
@@ -235,8 +237,7 @@ const sendQueue = () => {
 	// Connection not opened?
 	if (!ws || ws.readyState !== WebSocket.OPEN) {
 		// persists current queue in case app is closed before sync
-		if (persist) store.set('nucleus-queue', queue)
-	
+		store.set('nucleus-queue', queue)
 		return
 	}
 
@@ -265,16 +266,20 @@ const sendQueue = () => {
 // Try to report the data to the server
 const reportData = () => {
 
+	// Write to file in case we are offline to save data
+	store.set('nucleus-queue', queue)
+
 	// If nothing to report no need to reopen connection if in main process
 	// Except if we only report from main process
 	if (!queue.length && !gotInitted) return
 
 	if (trackingOff) return
 
+
 	// If socket was closed for whatever reason re-open it
 	if (!ws || ws.readyState !== WebSocket.OPEN) {
 
-		log('no connection to server. Opening it.')
+		log('No connection to server. Opening it.')
 
 		ws = new WebSocket(`${ endpoint }/app/${ localData.appId }/track`)
 
@@ -302,7 +307,7 @@ const messageFromServer = (message) => {
 	try {
 		data = JSON.parse(message.data)
 	} catch (e) {
-		logError('could not parse message from server.')
+		logError('Could not parse message from server.')
 		return
 	}
 
@@ -321,12 +326,12 @@ const messageFromServer = (message) => {
 
 	if (data.reportedIds || data.confirmation) {
 		// Data was successfully reported, we can empty the queue
-		log('server successfully registered our data.')
+		log('Server successfully registered our data.')
 
 		if (data.reportedIds) queue = queue.filter(e => !data.reportedIds.includes(e.id))
 		else if (data.confirmation) queue = [] // Legacy handling
 
-		if (persist) store.set('nucleus-queue', queue)
+		store.set('nucleus-queue', queue)
 	}
 
 }
@@ -346,10 +351,10 @@ const autoDetectData = () => {
 		const { remote, app } = require('electron')
 		const electronApp = remote ? remote.app : app // Depends on process
 
-		localData.version = utils.isDevMode() ? '0.0.0' : electronApp.getVersion()
+		localData.version = isDevMode() ? '0.0.0' : electronApp.getVersion()
 	} catch (e) {
+		log("Looks like it's not an Electron app.")
 		// Electron not available
-		// console.warn("Nucleus: version of your app couldn't be autodetected, set it manually.")
 	}
 
 	/* Try to find OS stuff */
@@ -365,8 +370,10 @@ const autoDetectData = () => {
 	
 	} catch (e) {
 
+		log("Looks like Node is not available. Let's try without.")
+
 		if (typeof navigator !== 'undefined') {
-			const osInfo = utils.getNavigatorOS()
+			const osInfo = getNavigatorOS()
  
 			localData.platform 	= osInfo.name
 			localData.osVersion = osInfo.version
@@ -378,7 +385,7 @@ const autoDetectData = () => {
 	let undetectedProps = Object.keys(localData).filter(prop => !localData[prop])
 
 	if (undetectedProps.length) {
-		logError(`Some properties couldn't be autodetected: ${undetectedProps.join(',')}. Set them manually or some data will be miss from the dashboard.`)
+		logError(`Some properties couldn't be autodetected: ${undetectedProps.join(',')}. Set them manually or data will be missing in the dashboard.`)
 	}
 
 }

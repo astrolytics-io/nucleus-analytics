@@ -23,25 +23,61 @@ module.exports = {
 		}
 	},
 	getStore: () => {
+
+		/* Will fail if no Node (like webpack) */
 		try {
-			/* For node, fallback to browser storage */
+
 			const Conf = require('conf')
-			const store = new Conf({
+
+			let options = {
 				encryptionKey: 's0meR1nd0mK3y', // for obfuscation
-			})
+				name: 'nucleus'
+			}
+
+			try {
+				// That's basically what the electron-store module does
+				// Save to the appropriate app location
+				// but we save the electron dependency and instead try to require it
+
+				const { remote, app } = require('electron')
+				const electronApp = remote ? remote.app : app // Depends on process
+				const defaultCwd = electronApp.getPath('userData')
+
+				options.cwd = defaultCwd
+
+			} catch (e) {
+				// No electron, default to conf default location
+			}
+
+			const store = new Conf(options)
 
 			return store
-		} catch(e) {
-			return {
-				get: (key) => {
-					return JSON.parse(localStorage.getItem(key))
-				},
-				set: (key, value) => {
-					localStorage.setItem(key, JSON.stringify(value))
-					return
+			
+		} catch (e) {
+
+			// Fallback to localStorage and mimick the API of 'conf'
+			if (typeof localStorage !== 'undefined') {
+				return {
+					get: (key) => {
+						return JSON.parse(localStorage.getItem(key))
+					},
+					set: (key, value) => {
+						localStorage.setItem(key, JSON.stringify(value))
+						return
+					}
+				}
+			} else {
+				console.warn("Nucleus: could not find a way to store cache. Offline events and persistance won't work!")
+
+				// Send a factice handler so calls don't fail
+				return {
+					get: () => {},
+					set: () => {}
 				}
 			}
+
 		}
+		
 	},
 	compareVersions (a, b) {
 		var i, diff
@@ -58,9 +94,8 @@ module.exports = {
 		return segmentsA.length - segmentsB.length
 	},
 	getWsClient () {
-		/* If natively available return it */
-		if (typeof global !== 'undefined') return global.WebSocket || require('ws')
-		if (typeof window !== 'undefined') return window.WebSocket || require('ws')
+		/* If natively available (browser env) return it */
+		if (typeof WebSocket !== 'undefined') return WebSocket
 		return require('ws')
 	},
 	getNavigatorOS: () => {
