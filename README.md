@@ -68,10 +68,9 @@ const Nucleus = require("nucleus-nodejs")
 
 Nucleus.init("<Your App Id>", {
 	disableInDev: false, // disable module while in development (default: false)
-	disableTracking: false, // completely disable tracking
+	disableTracking: false, // completely disable tracking from the start (default: false)
 	disableErrorReports: false, // disable errors reporting (default: false)
 	autoUserId: false, // auto assign the user an id: username@hostname
-	persist: false, // cache events to disk if offline to report later
 	debug: true // Show logs
 })
 
