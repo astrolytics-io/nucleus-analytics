@@ -63,7 +63,7 @@ const Nucleus = {
 		
 		if (options.reportInterval) reportInterval = options.reportInterval
 
-		localData.sessionId = Math.floor(Math.random() * 1e4) + 1
+		localData.sessionId = Math.floor(Math.random() * 1e6) + 1
 
 		if (localData.appId && (!isDevMode() || useInDev)) {
 
