@@ -1,11 +1,11 @@
 module.exports = {
-	isDevMode: () => { 
+	isDevMode: () => {
 		try {
 			//  From sindresorhus/electron-is-dev, thanks to the author
 			const getFromEnv = parseInt(process.env.ELECTRON_IS_DEV, 10) === 1
 			const isEnvSet = 'ELECTRON_IS_DEV' in process.env
 			return isEnvSet ? getFromEnv : (process.defaultApp || /node_modules[\\/]electron[\\/]/.test(process.execPath))
-		} catch(e) {
+		} catch (e) {
 			console.warn("Nucleus: Could not detect if we're in dev mode, defaulting to false.")
 			return false
 		}
@@ -17,7 +17,7 @@ module.exports = {
 			const username = os.userInfo().username
 
 			return username + '@' + hostname
-		} catch(e) {
+		} catch (e) {
 			console.warn('Nucleus: Could not autodetect an user id.')
 			return null
 		}
@@ -31,7 +31,7 @@ module.exports = {
 
 			let options = {
 				encryptionKey: 's0meR1nd0mK3y', // for obfuscation
-				name: 'nucleus'
+				configName: 'nucleus'
 			}
 
 			try {
@@ -52,7 +52,7 @@ module.exports = {
 			const store = new Conf(options)
 
 			return store
-			
+
 		} catch (e) {
 
 			// Fallback to localStorage and mimick the API of 'conf'
@@ -71,15 +71,15 @@ module.exports = {
 
 				// Send a factice handler so calls don't fail
 				return {
-					get: () => {},
-					set: () => {}
+					get: () => { },
+					set: () => { }
 				}
 			}
 
 		}
-		
+
 	},
-	compareVersions (a, b) {
+	compareVersions(a, b) {
 		var i, diff
 		var regExStrip0 = /(\.0+)+$/
 		var segmentsA = a.replace(regExStrip0, '').split('.')
@@ -93,7 +93,7 @@ module.exports = {
 
 		return segmentsA.length - segmentsB.length
 	},
-	getWsClient () {
+	getWsClient() {
 		/* If natively available (browser env) return it */
 		if (typeof WebSocket !== 'undefined') return WebSocket
 		return require('ws')
