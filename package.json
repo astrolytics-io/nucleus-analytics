@@ -1,6 +1,6 @@
 {
   "name": "nucleus-nodejs",
-  "version": "3.0.5",
+  "version": "3.0.6",
   "description": "Analytics and bug reporting for Electron and Node.js.",
   "main": "index.js",
   "types": "index.d.ts",
