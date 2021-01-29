@@ -29,15 +29,13 @@
   "homepage": "https://nucleus.sh",
   "dependencies": {
     "arch": "^2.2.0",
-    "conf": "^7.1.2",
     "node-machine-id": "^1.1.12",
-    "os-locale": "^4.0.0",
     "ws": "^7.1.2"
   },
   "optionalDependencies": {
-    "conf": "^7.1.2",
+    "conf": "^9.0.0",
     "node-machine-id": "^1.1.12",
-    "os-locale": "^4.0.0",
+    "os-locale": "^5.0.0",
     "ws": "^7.1.2"
   },
   "devDependencies": {
