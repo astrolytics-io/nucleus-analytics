@@ -79,6 +79,7 @@ module.exports = {
 		}
 
 	},
+	// we use this for the save() calls to prevent EPERM & EBUSY errors
 	debounce: (func) => {
 		let timeout;
 
