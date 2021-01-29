@@ -79,6 +79,19 @@ module.exports = {
 		}
 
 	},
+	debounce: (func) => {
+		let timeout;
+
+		return function executedFunction(...args) {
+			const later = () => {
+				clearTimeout(timeout)
+				func(...args)
+			}
+
+			clearTimeout(timeout)
+			timeout = setTimeout(later, 1000)
+		}
+	},
 	compareVersions(a, b) {
 		var i, diff
 		var regExStrip0 = /(\.0+)+$/

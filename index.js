@@ -6,7 +6,8 @@ const {
 	isDevMode,
 	getNavigatorOS,
 	generateUserId,
-	compareVersions
+	compareVersions,
+	debounce
 } = require('./utils.js')
 
 /* Either from browser or Node 'ws' */
@@ -199,7 +200,7 @@ const Nucleus = {
 		if (!overwrite) props = Object.assign(props, newProps)
 		else props = newProps
 			
-		store.set('nucleus-props', props)
+		debounce(() => store.set('nucleus-props', props))
 
 		// only send event if we didn't init, else will be passed with init
 		if (gotInitted) this.track(null, props, 'props')
@@ -283,9 +284,10 @@ const reportData = () => {
 
 		ws = new WebSocket(`${ endpoint }/app/${ localData.appId }/track`)
 
-		ws.onerror = (e)=> {
+		ws.onerror = (e) => {
 			logError(`ws ${e.code}: ${e.reason}`)
 		}
+
 		ws.onclose = (e) => {
 			logError(`ws ${e.code}: ${e.reason}`)
 		}
@@ -314,7 +316,7 @@ const messageFromServer = (message) => {
 	if (data.customData) {
 		// Cache (or update cache) the custom data
 		cache.customData = data.customData
-		store.set('nucleus-cache', cache)
+		debounce(() => store.set('nucleus-cache', cache))
 	}
 
 	if (data.latestVersion) {
@@ -331,7 +333,7 @@ const messageFromServer = (message) => {
 		if (data.reportedIds) queue = queue.filter(e => !data.reportedIds.includes(e.id))
 		else if (data.confirmation) queue = [] // Legacy handling
 
-		store.set('nucleus-queue', queue)
+		debounce(() => store.set('nucleus-queue', queue))
 	}
 
 }
