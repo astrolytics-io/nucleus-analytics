@@ -4,11 +4,11 @@ Analytics, licensing and bug reports for Node.js, Electron and NW.js desktop app
 
 We made it as simple as possible to report the data you need to analyze your app and improve it.
 
-To start using this module, sign up and get an app ID on [Nucleus.sh](https://nucleus.sh). 
+To start using this module, sign up and get an app ID on [Nucleus.sh](https://nucleus.sh).
 
 <b>Electron:</b>
 
-This module works in both the renderer and the main process. 
+This module works in both the renderer and the main process.
 However be sure to only call the `appStarted()` method once per session (in only one process) or you'll find duplicate data in the dashboard.
 
 This module can even run in a browser outside of Node (for example in the Electron renderer process with Node Integration disabled).
@@ -20,7 +20,7 @@ The version 3 of the module introce breaking changes, so be careful to update yo
 
 - You now have to manually call the `init` and `appStarted` methods to start the analaytics session. This was because the previous way was confusing between processes.
 - The module is now 100% independent from Node and can run in an isolated browser context
-- Options were renamed 
+- Options were renamed
 -->
 
 ## Installation
@@ -35,28 +35,28 @@ $ npm install nucleus-nodejs --save
 
 Sign up and get a tracking ID for your app [here](https://nucleus.sh).
 
-Call the appStarted method *only one time* per session.
+Call the appStarted method _only one time_ per session.
 
 You only need to call `init` once per process.
 
 If you use the module in both the main and renderer process, make sure that you only call `appStarted` once.
 
 ```javascript
-const Nucleus = require("nucleus-nodejs")
+const Nucleus = require("nucleus-nodejs");
 
-Nucleus.init("<Your App Id>")
+Nucleus.init("<Your App Id>");
 
 // Optional: sets an user ID
-Nucleus.setUserId('richard_hendrix')
+Nucleus.setUserId("richard_hendrix");
 
 // Required: Sends the first event to the server that app started
-Nucleus.appStarted()
+Nucleus.appStarted();
 
 // Report things
 Nucleus.track("PLAYED_TRACK", {
-	trackName: 'My Awesome Song',
-	duration: 120
-})
+  trackName: "My Awesome Song",
+  duration: 120,
+});
 ```
 
 ### Options
@@ -64,17 +64,17 @@ Nucleus.track("PLAYED_TRACK", {
 You can init Nucleus with options:
 
 ```javascript
-const Nucleus = require("nucleus-nodejs")
+const Nucleus = require("nucleus-nodejs");
 
 Nucleus.init("<Your App Id>", {
-	disableInDev: false, // disable module while in development (default: false)
-	disableTracking: false, // completely disable tracking from the start (default: false)
-	disableErrorReports: false, // disable errors reporting (default: false)
-	autoUserId: false, // auto assign the user an id: username@hostname
-	debug: true // Show logs
-})
+  disableInDev: false, // disable module while in development (default: false)
+  disableTracking: false, // completely disable tracking from the start (default: false)
+  disableErrorReports: false, // disable errors reporting (default: false)
+  autoUserId: false, // auto assign the user an id: username@hostname
+  debug: true, // Show logs
+});
 
-Nucleus.appStarted()
+Nucleus.appStarted();
 ```
 
 **Each property is optional**. You can start using the module with just the app ID.
@@ -87,12 +87,12 @@ You can also change the data, if you make sure to do it before the `appStarted` 
 
 ```javascript
 Nucleus.setProps({
-	version: '0.3.1',
-	language: 'fr'
-	// ...
-})
+  version: "0.3.1",
+  language: "fr",
+  // ...
+});
 
-Nucleus.appStarted()
+Nucleus.appStarted();
 ```
 
 **Note** : when running in development, the app version will be '0.0.0'
@@ -101,50 +101,60 @@ Nucleus.appStarted()
 
 You can track specific users actions on the 'User Explorer' section of your dashboard.
 
-For that, you can supply an `userId` when initing the Nucleus module. 
+For that, you need to supply an `userId`, a string that will allow you to track your users.
 
 It can be your own generated ID, an email, username... etc.
 
 ```javascript
-Nucleus.setProps({
-	userId: 'someUniqueUserId'
-})
+Nucleus.identify("someUniqueUserId"});
 ```
 
-Or:
+You can also pass custom attributes to be reported along with it. 
 
 ```javascript
-Nucleus.setUserId('someUniqueUserId')
+Nucleus.identify("someUniqueUserId", {
+  age: 34,
+  name: "Richard Hendricks",
+  jobType: "CEO",
+});
 ```
 
-Alternatively, set the `autoUserId` option of the module to `true` to assign the user an ID based on his username and hostname.
+If you call `.identify()` multiple times, the last one will be remembered as the current user data (it will overwrite).
+
+Later on, you can update the userId only (and keep the attributes) with this method:
+
+```javascript
+Nucleus.setUserId("someUniqueUserId");
+```
+
+Alternatively, set the `autoUserId` option of the module to `true` to automatically assign the user an ID based on his username and hostname.
 
 
-### Add properties
+### Update user attributes
 
-You can report custom data along with the automatic data.
- 
+You can report custom user attributes along with the automatic data.
+
 Those will be visible in your user dashboard if you previously set an user ID.
 
 The module will remember past properties so you can use `Nucleus.setProps` multiple times without overwriting past props.
 
-Properties can either **numbers**, **strings** or **booleans**. 
+Properties can either **numbers**, **strings** or **booleans**.
 Nested properties or arrays aren't supported at the moment.
 
 ```javascript
 Nucleus.setProps({
-	age: 34,
-	name: 'Richard Hendricks',
-	jobType: 'CEO'
-})
+  age: 34,
+  name: "Richard Hendricks",
+  jobType: "CEO",
+});
 ```
 
-Enable overwrite: set the second parameter as true to overwrite past properties. 
+Enable overwrite: set the second parameter as true to overwrite past properties.
 
 ```javascript
 Nucleus.setProps({
-	age: 23
-}, true)
+  age: 23,
+}, true);
 ```
 
 ### Events
@@ -152,7 +162,7 @@ Nucleus.setProps({
 After initializing Nucleus, you can send your own custom events.
 
 ```javascript
-Nucleus.track("PLAYED_TRACK")
+Nucleus.track("PLAYED_TRACK");
 ```
 
 They are a couple event names that are reserved by Nucleus: `init`, `error:` and `nucleus:`. Don't report events containing these strings.
@@ -161,16 +171,16 @@ They are a couple event names that are reserved by Nucleus: `init`, `error:` and
 
 You can also add extra information to tracked events, as a JSON object.
 
-Properties can either **numbers**, **strings** or **booleans**. 
+Properties can either **numbers**, **strings** or **booleans**.
 Nested properties or arrays aren't supported at the moment.
 
 Example
 
 ```javascript
 Nucleus.track("PLAYED_TRACK", {
-	trackName: 'My Awesome Song',
-	duration: 120
-})
+  trackName: "My Awesome Song",
+  duration: 120,
+});
 ```
 
 ### Toggle tracking
@@ -180,19 +190,18 @@ This will completely disable any communication with Nucleus' servers.
 To opt-out your users from tracking, use the following methods:
 
 ```javascript
-Nucleus.disableTracking()
+Nucleus.disableTracking();
 ```
 
 and to opt back in:
 
 ```javascript
-Nucleus.enableTracking()
+Nucleus.enableTracking();
 ```
 
 This change won't persist after restarts so you have to handle the saving of the settings.
 
 You can also supply a `disableTracking: true` option to the module on start if you want to directly prevent tracking.
-
 
 ### Errors
 
@@ -200,21 +209,19 @@ Nucleus will by default report all `uncaughtException` and `unhandledRejection`.
 
 If you'd like to act on these errors, for example show them to your user, quit the app or reload it, you can define an onError function, which will be called on errors happening on the respective process.
 
-
 ```javascript
-Nucleus.onError = (type, err) => {
-	console.error(err)
-	// type will either be uncaughtException, unhandledRejection or windowError
-}
+Nucleus.onError = (type, err) => {
+  console.error(err);
+  // type will either be uncaughtException, unhandledRejection or windowError
+};
 ```
-
 
 `windowError` is an `uncaughtException` that happened in the renderer process. It was catched with `window.onerror`.
 
 If you'd like to report another type of error, you can do so with:
 
 ```javascript
-Nucleus.trackError('myCustomError', err)
+Nucleus.trackError("myCustomError", err);
 ```
 
 ### Updates
@@ -223,14 +230,14 @@ If the user is running a version inferior to the one set in your app settings (a
 
 If there's an update, the function will be called when starting the app.
 
-
 ```javascript
-Nucleus.onUpdate = (lastVersion) => {
-	alert('New version available: ' + lastVersion)
-}
+Nucleus.onUpdate = (lastVersion) => {
+  alert("New version available: " + lastVersion);
+};
 ```
 
 **Note** : when running in development, the app version will be '0.0.0', so you can test this by setting a higher version in your dashboard
 
 ---
+
 Contact **hello@nucleus.sh** for any inquiry
