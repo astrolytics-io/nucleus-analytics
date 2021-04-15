@@ -205,28 +205,10 @@ const Nucleus = {
 		if (gotInitted) this.track(null, props, 'props')
 	},
 
-	// Allows for both setting user and properties at the same time
+	// Allows for setting both setting user and properties at the same time
 	identify: function(newId, newProps) {
-		if (!newId || newId.trim() === '') return false
-
-		log('user id set to '+newId)
-
-		localData.userId = newId
-
-		// If it's part of the localData object overwrite there
-		for (let prop in newProps) {
-			if (localData[prop]) {
-				localData[prop] = newProps[prop]
-				newProps[prop] = null
-			}
-		}
-		
-		props = newProps
-			
-		debounce(() => store.set('nucleus-props', props))
-
-		// only send event if we didn't init, else will be passed with init
-		if (gotInitted) this.track(null, props, 'userid') 
+		this.setUserId(newId)
+		this.setProps(newProps, true)
 	},
 
 	disableTracking: () => {
