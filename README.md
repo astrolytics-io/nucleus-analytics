@@ -101,25 +101,15 @@ Nucleus.appStarted();
 
 You can track specific users actions on the 'User Explorer' section of your dashboard.
 
-For that, you can supply an `userId` when initing the Nucleus module.
+For that, you need to supply an `userId`, a string that will allow you to track your users.
 
 It can be your own generated ID, an email, username... etc.
 
 ```javascript
-Nucleus.setProps({
-  userId: "someUniqueUserId",
-});
+Nucleus.identify("someUniqueUserId"});
 ```
 
-Or:
-
-```javascript
-Nucleus.setUserId("someUniqueUserId");
-```
-
-Alternatively, set the `autoUserId` option of the module to `true` to assign the user an ID based on his username and hostname.
-
-You can also identify user and set properties at the same time.
+You can also pass custom attributes to be reported along with it. 
 
 ```javascript
 Nucleus.identify("someUniqueUserId", {
@@ -129,9 +119,20 @@ Nucleus.identify("someUniqueUserId", {
 });
 ```
 
-### Add properties
+If you call `.identify()` multiple times, the last one will be remembered as the current user data (it will overwrite).
 
-You can report custom data along with the automatic data.
+Later on, you can update the userId only (and keep the attributes) with this method:
+
+```javascript
+Nucleus.setUserId("someUniqueUserId");
+```
+
+Alternatively, set the `autoUserId` option of the module to `true` to automatically assign the user an ID based on his username and hostname.
+
+
+### Update user attributes
+
+You can report custom user attributes along with the automatic data.
 
 Those will be visible in your user dashboard if you previously set an user ID.
 
@@ -151,22 +152,9 @@ Nucleus.setProps({
 Enable overwrite: set the second parameter as true to overwrite past properties.
 
 ```javascript
-Nucleus.setProps(
-  {
-    age: 23,
-  },
-  true
-);
-```
-
-You may also define a user and set properties at the same time.
-
-```javascript
-Nucleus.identify("someUniqueUserId", {
-  age: 34,
-  name: "Richard Hendricks",
-  jobType: "CEO",
-});
+Nucleus.setProps({
+  age: 23,
+}, true);
 ```
 
 ### Events
