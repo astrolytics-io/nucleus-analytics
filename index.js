@@ -215,7 +215,7 @@ const Nucleus = {
 	screen: function(name, params){
 		if (!name || name.trim() === '') return false
 
-		log('viewing screen '+newId)
+		log('viewing screen '+ name)
 
 		this.track(name, params, 'nucleus:view') 
 	},
