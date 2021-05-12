@@ -34,6 +34,10 @@ export interface Nucleus {
     id: number | string,
     props: { [key: string]: string | number | boolean }
   ) => void;
+  screen: (
+    name: number | string,
+    params: { [key: string]: string | number | boolean }
+  ) => void;
   track: (
     customEvent: string,
     data?: { [key: string]: string | number | boolean }

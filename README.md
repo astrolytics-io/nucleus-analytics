@@ -109,7 +109,7 @@ It can be your own generated ID, an email, username... etc.
 Nucleus.identify("someUniqueUserId"});
 ```
 
-You can also pass custom attributes to be reported along with it. 
+You can also pass custom attributes to be reported along with it.
 
 ```javascript
 Nucleus.identify("someUniqueUserId", {
@@ -128,7 +128,6 @@ Nucleus.setUserId("someUniqueUserId");
 ```
 
 Alternatively, set the `autoUserId` option of the module to `true` to automatically assign the user an ID based on his username and hostname.
-
 
 ### Update user attributes
 
@@ -152,9 +151,12 @@ Nucleus.setProps({
 Enable overwrite: set the second parameter as true to overwrite past properties.
 
 ```javascript
-Nucleus.setProps({
-  age: 23,
-}, true);
+Nucleus.setProps(
+  {
+    age: 23,
+  },
+  true
+);
 ```
 
 ### Events
@@ -180,6 +182,23 @@ Example
 Nucleus.track("PLAYED_TRACK", {
   trackName: "My Awesome Song",
   duration: 120,
+});
+```
+
+#### Pages and Screen Views
+
+You can also set up Nucleus to track page visits and screen views by users in your app
+
+Params can either be **numbers**, **strings** or **booleans**.
+Nested params or arrays aren't supported at the moment.
+
+Example
+
+```javascript
+Nucleus.screen("Cart", {
+  action: "addItem",
+  count: 5,
+  onSuccess: true,
 });
 ```
 
