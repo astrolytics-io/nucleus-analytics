@@ -187,7 +187,6 @@ const Nucleus = {
 
 	// Allows to set custom properties to users
 	setProps: function(newProps, overwrite) {
-
 		// If it's part of the localData object overwrite there
 		for (let prop in newProps) {
 			if (localData[prop]) {
@@ -204,6 +203,12 @@ const Nucleus = {
 
 		// only send event if we didn't init, else will be passed with init
 		if (gotInitted) this.track(null, props, 'props')
+	},
+
+	// Allows for setting both setting user and properties at the same time
+	identify: function(newId, newProps) {
+		this.setUserId(newId)
+		this.setProps(newProps, true)
 	},
 
 	disableTracking: () => {
