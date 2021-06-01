@@ -217,20 +217,5 @@ If you'd like to report another type of error, you can do so with:
 Nucleus.trackError('myCustomError', err)
 ```
 
-### Updates
-
-If the user is running a version inferior to the one set in your app settings (account section in the dashboard), it can call a function so you can alert the user (or something else).
-
-If there's an update, the function will be called when starting the app.
-
-
-```javascript
-Nucleus.onUpdate = (lastVersion) => {
-	alert('New version available: ' + lastVersion)
-}
-```
-
-**Note** : when running in development, the app version will be '0.0.0', so you can test this by setting a higher version in your dashboard
-
 ---
 Contact **hello@nucleus.sh** for any inquiry
