@@ -155,12 +155,18 @@ module.exports = {
 		}
 
 		if (/Windows/.test(os)) {
-			osVersion = /Windows (.*)/.exec(os)[1]
+			const osVersionResult = /Windows (.*)/.exec(os)
+			if (osVersionResult && osVersionResult.length > 1) {
+				osVersion = osVersionResult[1]
+			}
 			os = 'Windows'
 		}
 
 		if (/Mac OS X/.test(os)) {
-			osVersion = /Mac OS X (10[._\d]+)/.exec(nAgt)[1]
+			const osVersionResult = /Mac OS X ([0-9]*[._\d]+)/.exec(nAgt)
+			if (osVersionResult && osVersionResult.length > 1) {
+				osVersion = osVersionResult[1]
+			}
 		}
 
 		return {
