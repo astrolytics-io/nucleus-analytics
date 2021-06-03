@@ -13,16 +13,6 @@ However be sure to only call the `appStarted()` method once per session (in only
 
 This module can even run in a browser outside of Node (for example in the Electron renderer process with Node Integration disabled).
 
-<!--
-# 3.0.0 Breaking changes:
-
-The version 3 of the module introce breaking changes, so be careful to update your integration before upgrading.
-
-- You now have to manually call the `init` and `appStarted` methods to start the analaytics session. This was because the previous way was confusing between processes.
-- The module is now 100% independent from Node and can run in an isolated browser context
-- Options were renamed
--->
-
 ## Installation
 
 Using npm:
@@ -42,21 +32,21 @@ You only need to call `init` once per process.
 If you use the module in both the main and renderer process, make sure that you only call `appStarted` once.
 
 ```javascript
-const Nucleus = require("nucleus-nodejs");
+const Nucleus = require("nucleus-nodejs")
 
-Nucleus.init("<Your App Id>");
+Nucleus.init("<Your App Id>")
 
 // Optional: sets an user ID
-Nucleus.setUserId("richard_hendrix");
+Nucleus.setUserId("richard_hendrix")
 
 // Required: Sends the first event to the server that app started
-Nucleus.appStarted();
+Nucleus.appStarted()
 
 // Report things
 Nucleus.track("PLAYED_TRACK", {
   trackName: "My Awesome Song",
   duration: 120,
-});
+})
 ```
 
 ### Options
@@ -145,14 +135,14 @@ Nucleus.setProps({
   age: 34,
   name: "Richard Hendricks",
   jobType: "CEO",
-});
+})
 ```
 
 Enable overwrite: set the second parameter as true to overwrite past properties.
 
 ```javascript
 Nucleus.setProps({
-    age: 23,
+  age: 23
 }, true)
 ```
 
@@ -186,7 +176,7 @@ Nucleus.track("PLAYED_TRACK", {
 
 You can set up Nucleus to track page visits and screen views in your app.
 
-For that, whenever the user navigates to a different page, simply use the `.screen()` method: 
+For that, whenever the user navigates to a different page, call the `.screen()` method with the new view name.
 
 ```javascript
 Nucleus.screen("View Name")
@@ -232,7 +222,7 @@ If you'd like to act on these errors, for example show them to your user, quit t
 
 ```javascript
 Nucleus.onError = (type, err) => {
-  console.error(err);
+  console.error(err)
   // type will either be uncaughtException, unhandledRejection or windowError
 }
 ```
@@ -244,21 +234,5 @@ If you'd like to report another type of error, you can do so with:
 ```javascript
 Nucleus.trackError("myCustomError", err)
 ```
-
-### Updates
-
-If the user is running a version inferior to the one set in your app settings (account section in the dashboard), it can call a function so you can alert the user (or something else).
-
-If there's an update, the function will be called when starting the app.
-
-```javascript
-Nucleus.onUpdate = (lastVersion) => {
-  alert("New version available: " + lastVersion)
-}
-```
-
-**Note** : when running in development, the app version will be '0.0.0', so you can test this by setting a higher version in your dashboard
-
----
 
 Contact **hello@nucleus.sh** for any inquiry
