@@ -106,7 +106,7 @@ const Nucleus = {
 		reportData()
 	},
 
-	track: (eventName, data=undefined, type='event') => {
+	track: debounce((eventName, data=undefined, type='event') => {
 
 		if (!localData.appId) return logError('Missing APP ID before we can start tracking.')
  
@@ -151,7 +151,7 @@ const Nucleus = {
 		}
 
 		queue.push(eventData)
-	},
+	}),
 
 	// Not arrow for this
 	trackError: function(name, err) {
