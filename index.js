@@ -7,7 +7,8 @@ const {
 	getNavigatorOS,
 	generateUserId,
 	compareVersions,
-	debounce
+	debounce,
+	debounceEvents
 } = require('./utils.js')
 
 /* Either from browser or Node 'ws' */
@@ -106,7 +107,7 @@ const Nucleus = {
 		reportData()
 	},
 
-	track: debounce((eventName, data=undefined, type='event') => {
+	track: debounceEvents((eventName, data=undefined, type='event') => {
 
 		if (!localData.appId) return logError('Missing APP ID before we can start tracking.')
  
