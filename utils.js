@@ -80,7 +80,7 @@ module.exports = {
 
 	},
 	// we use this for the save() calls to prevent EPERM & EBUSY errors
-	debounce: (func) => {
+	debounce: (func, interval) => {
 		let timeout;
 
 		return function executedFunction(...args) {
@@ -90,20 +90,7 @@ module.exports = {
 			}
 
 			clearTimeout(timeout)
-			timeout = setTimeout(later, 1000)
-		}
-	},
-	debounceEvents: (func) => {
-		let timeout;
-
-		return function executedFunction(...args) {
-			const later = () => {
-				clearTimeout(timeout)
-				func(...args)
-			}
-
-			clearTimeout(timeout)
-			timeout = setTimeout(later, 100)
+			timeout = setTimeout(later, interval)
 		}
 	},
 	compareVersions(a, b) {
