@@ -211,6 +211,15 @@ const Nucleus = {
 		this.setProps(newProps, true)
 	},
 
+	// Allows for tracking of pages users are visiting
+	screen: function(name, params){
+		if (!name || name.trim() === '') return false
+
+		log('viewing screen '+ name)
+
+		this.track(name, params, 'nucleus:view') 
+	},
+
 	disableTracking: () => {
 		trackingOff = true
 		log('tracking disabled')

@@ -13,16 +13,6 @@ However be sure to only call the `appStarted()` method once per session (in only
 
 This module can even run in a browser outside of Node (for example in the Electron renderer process with Node Integration disabled).
 
-<!--
-# 3.0.0 Breaking changes:
-
-The version 3 of the module introce breaking changes, so be careful to update your integration before upgrading.
-
-- You now have to manually call the `init` and `appStarted` methods to start the analaytics session. This was because the previous way was confusing between processes.
-- The module is now 100% independent from Node and can run in an isolated browser context
-- Options were renamed
--->
-
 ## Installation
 
 Using npm:
@@ -109,7 +99,7 @@ It can be your own generated ID, an email, username... etc.
 Nucleus.identify("someUniqueUserId"})
 ```
 
-You can also pass custom attributes to be reported along with it. 
+You can also pass custom attributes to be reported along with it.
 
 ```javascript
 Nucleus.identify("someUniqueUserId", {
@@ -128,7 +118,6 @@ Nucleus.setUserId("someUniqueUserId")
 ```
 
 Alternatively, set the `autoUserId` option of the module to `true` to automatically assign the user an ID based on his username and hostname.
-
 
 ### Update user attributes
 
@@ -153,7 +142,7 @@ Enable overwrite: set the second parameter as true to overwrite past properties.
 
 ```javascript
 Nucleus.setProps({
-  age: 23,
+  age: 23
 }, true)
 ```
 
@@ -167,12 +156,12 @@ Nucleus.track("PLAYED_TRACK")
 
 They are a couple event names that are reserved by Nucleus: `init`, `error:` and `nucleus:`. Don't report events containing these strings.
 
-#### Attach more data
+#### Attach custom data
 
 You can also add extra information to tracked events, as a JSON object.
 
 Properties can either **numbers**, **strings** or **booleans**.
-Nested properties or arrays aren't supported at the moment.
+Nested properties or arrays aren't supported at the moment (they won't show in the dashboard).
 
 Example
 
@@ -182,6 +171,28 @@ Nucleus.track("PLAYED_TRACK", {
   duration: 120,
 })
 ```
+
+#### Pages and Screen Views (beta)
+
+You can set up Nucleus to track page visits and screen views in your app.
+
+For that, whenever the user navigates to a different page, call the `.screen()` method with the new view name.
+
+```javascript
+Nucleus.screen("View Name")
+```
+
+You can attach extra info about the view. Example: 
+
+```javascript
+Nucleus.screen("Cart", {
+  action: "addItem",
+  count: 5
+})
+```
+
+Params can either be **numbers**, **strings** or **booleans**.
+Nested params or arrays aren't supported at the moment (they won't show in the dashboard).
 
 ### Toggle tracking
 
