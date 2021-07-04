@@ -106,7 +106,7 @@ const Nucleus = {
 		reportData()
 	},
 
-	track: (eventName, data=undefined, type='event') => {
+	track: debounce((eventName, data=undefined, type='event') => {
 
 		if (!localData.appId) return logError('Missing APP ID before we can start tracking.')
  
@@ -151,7 +151,7 @@ const Nucleus = {
 		}
 
 		queue.push(eventData)
-	},
+	}, 100),
 
 	// Not arrow for this
 	trackError: function(name, err) {
@@ -199,7 +199,7 @@ const Nucleus = {
 		if (!overwrite) props = Object.assign(props, newProps)
 		else props = newProps
 			
-		debounce(() => store.set('nucleus-props', props))
+		debounce(() => store.set('nucleus-props', props), 1000)
 
 		// only send event if we didn't init, else will be passed with init
 		if (gotInitted) this.track(null, props, 'props')
@@ -321,7 +321,7 @@ const messageFromServer = (message) => {
 	if (data.customData) {
 		// Cache (or update cache) the custom data
 		cache.customData = data.customData
-		debounce(() => store.set('nucleus-cache', cache))
+		debounce(() => store.set('nucleus-cache', cache), 1000)
 	}
 
 	if (data.latestVersion) {
@@ -338,7 +338,7 @@ const messageFromServer = (message) => {
 		if (data.reportedIds) queue = queue.filter(e => !data.reportedIds.includes(e.id))
 		else if (data.confirmation) queue = [] // Legacy handling
 
-		debounce(() => store.set('nucleus-queue', queue))
+		debounce(() => store.set('nucleus-queue', queue), 1000)
 	}
 
 }
