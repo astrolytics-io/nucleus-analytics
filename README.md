@@ -172,7 +172,7 @@ Nucleus.track("PLAYED_TRACK", {
 })
 ```
 
-#### Pages and Screen Views (new)
+#### Pages and Screen Views (beta)
 
 You can set up Nucleus to track page visits and screen views in your app.
 
