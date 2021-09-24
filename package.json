@@ -5,7 +5,7 @@
   "main": "index.js",
   "types": "index.d.ts",
   "scripts": {
-    "lint": "eslint .",
+    "lint": "standard --fix",
     "prepush": "npm run lint && npm test",
     "test": "echo 'No test yet.'"
   },
@@ -37,7 +37,10 @@
     "ws": "^7.4.6"
   },
   "devDependencies": {
-    "eslint": "^6.8.0",
-    "husky": "^3.1.0"
+    "husky": "^3.1.0",
+    "standard": "^16.0.3"
+  },
+  "standard": {
+    "globals": ["localStorage", "WebSocket"]
   }
 }
