@@ -29,10 +29,15 @@ Using npm:
 $ npm install nucleus-analytics --save
 ```
 
-or directly in the browser:
+In the browser:
 
 ```
-<script src="https://unpkg.
+<scripts src="https://cdn.jsdelivr.net/gh/nucleus-sh/nucleus-javascript@browser-support/dist/index.min.js"></script>
+
+<script>
+Nucleus.init("<Your App Id>")
+</script>
+
 ```
 
 ## Usage
