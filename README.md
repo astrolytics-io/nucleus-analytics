@@ -13,12 +13,26 @@ This module works in both the renderer and the main process, but **you should us
 
 This module can even run in a browser outside of Node (for example in the Electron renderer process with Node Integration disabled).
 
+## V4.0 breaking changes
+- the .appStarted() method has been removed and integrated into .init()
+- on Electron, the module is now made to be used in 1 process only (renderer recommended)
+- .screen() has been replaced by .page()
+- the module is now fully compatible with browser environments
+- the "autoUserId" option has been removed
+- the deprecated .checkUpdates() method has been removed
+
 ## Installation
 
 Using npm:
 
 ```bash
 $ npm install nucleus-analytics --save
+```
+
+or directly in the browser:
+
+```
+<script src="https://unpkg.
 ```
 
 ## Usage
@@ -62,11 +76,11 @@ Nucleus.appStarted()
 
 **Each property is optional**. You can start using the module with just the app ID.
 
-The module will try to autodetect a maximum of data as possible but some can fail to detect (especially if in a Browser outside of Node).
+The module will try to autodetect a maximum of data as possible but some can fail to detect.
 
-It will tell you in the logs (if you set `debug: true`) which one failed to detect.
+It will tell you in the logs (if you set `debug: true`) which one it failed to detect.
 
-You can also change the data, if you make sure to do it before the `appStarted` method.
+You can also change the data:
 
 ```javascript
 Nucleus.setProps({
@@ -87,7 +101,7 @@ For that, you need to supply an `userId`, a string that will allow you to track 
 It can be your own generated ID, an email, username... etc.
 
 ```javascript
-Nucleus.identify("someUniqueUserId"})
+Nucleus.identify("someUniqueUserId")
 ```
 
 You can also pass custom attributes to be reported along with it.
