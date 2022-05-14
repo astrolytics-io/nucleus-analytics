@@ -7,7 +7,6 @@
   "types": "src/index.d.ts",
   "scripts": {
     "lint": "eslint --fix",
-    "prepush": "npm run lint && npm test",
     "test": "echo 'No test yet.'"
   },
   "repository": {
@@ -28,9 +27,7 @@
     "url": "https://github.com/nucleus-sh/nucleus-analytics/issues"
   },
   "homepage": "https://nucleus.sh",
-  "dependencies": {
-
-  },
+  "dependencies": {},
   "prettier": {
     "semi": false
   },
@@ -50,5 +47,10 @@
       "localStorage",
       "WebSocket"
     ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-push": "npm run lint && npm test"
+    }
   }
 }
