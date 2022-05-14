@@ -1,6 +1,6 @@
-# nucleus-nodejs [![npm](https://img.shields.io/npm/v/nucleus-nodejs.svg)](https://www.npmjs.com/package/nucleus-nodejs)
+# nucleus-analytics [![npm](https://img.shields.io/npm/v/nucleus-analytics.svg)](https://www.npmjs.com/package/nucleus-analytics)
 
-Analytics, licensing and bug reports for Node.js, Electron and NW.js desktop applications.
+Isomorphic analytics and bug tracking for browser, Node.js, Electron and NW.js desktop applications.
 
 We made it as simple as possible to report the data you need to analyze your app and improve it.
 
@@ -8,8 +8,8 @@ To start using this module, sign up and get an app ID on [Nucleus.sh](https://nu
 
 <b>Electron:</b>
 
-This module works in both the renderer and the main process.
-However be sure to only call the `appStarted()` method once per session (in only one process) or you'll find duplicate data in the dashboard.
+This module works in both the renderer and the main process, but **you should use it in one process only, optherwise you'll see duplicated data.**
+
 
 This module can even run in a browser outside of Node (for example in the Electron renderer process with Node Integration disabled).
 
@@ -18,29 +18,23 @@ This module can even run in a browser outside of Node (for example in the Electr
 Using npm:
 
 ```bash
-$ npm install nucleus-nodejs --save
+$ npm install nucleus-analytics --save
 ```
 
 ## Usage
 
 Sign up and get a tracking ID for your app [here](https://nucleus.sh).
 
-Call the appStarted method _only one time_ per session.
-
 You only need to call `init` once per process.
 
-If you use the module in both the main and renderer process, make sure that you only call `appStarted` once.
 
 ```javascript
-const Nucleus = require("nucleus-nodejs")
+import Nucleus from "nucleus-analytics"
 
 Nucleus.init("<Your App Id>")
 
 // Optional: sets an user ID
 Nucleus.setUserId("richard_hendrix")
-
-// Required: Sends the first event to the server that app started
-Nucleus.appStarted()
 
 // Report things
 Nucleus.track("PLAYED_TRACK", {
@@ -54,13 +48,12 @@ Nucleus.track("PLAYED_TRACK", {
 You can init Nucleus with options:
 
 ```javascript
-const Nucleus = require("nucleus-nodejs")
+import Nucleus from "nucleus-analytics"
 
 Nucleus.init("<Your App Id>", {
   disableInDev: false, // disable module while in development (default: false)
   disableTracking: false, // completely disable tracking from the start (default: false)
   disableErrorReports: false, // disable errors reporting (default: false)
-  autoUserId: false, // auto assign the user an id: username@hostname
   debug: true, // Show logs
 })
 
@@ -81,8 +74,6 @@ Nucleus.setProps({
   language: "fr",
   // ...
 })
-
-Nucleus.appStarted()
 ```
 
 **Note** : when running in development, the app version will be '0.0.0'

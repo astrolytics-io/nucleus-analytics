@@ -1,17 +1,18 @@
 {
-  "name": "nucleus-nodejs",
-  "version": "3.0.9",
-  "description": "Analytics and bug reporting for Electron and Node.js.",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "name": "nucleus-analytics",
+  "version": "4.0.0",
+  "description": "Analytics and bug reporting for Electron, Node.js and the browser",
+  "type": "module",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
   "scripts": {
-    "lint": "standard --fix",
+    "lint": "eslint --fix",
     "prepush": "npm run lint && npm test",
     "test": "echo 'No test yet.'"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nucleus-sh/nucleus-nodejs.git"
+    "url": "git+https://github.com/nucleus-sh/nucleus-analytics.git"
   },
   "keywords": [
     "analytics",
@@ -24,11 +25,14 @@
   "author": "Nucleus.sh",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/nucleus-sh/nucleus-nodejs/issues"
+    "url": "https://github.com/nucleus-sh/nucleus-analytics/issues"
   },
   "homepage": "https://nucleus.sh",
   "dependencies": {
-    "arch": "^2.2.0"
+
+  },
+  "prettier": {
+    "semi": false
   },
   "optionalDependencies": {
     "conf": "^9.0.0",
@@ -37,10 +41,11 @@
     "ws": "^7.4.6"
   },
   "devDependencies": {
-    "husky": "^3.1.0",
-    "standard": "^16.0.3"
+    "clientjs": "^0.2.1",
+    "eslint": "^8.15.0",
+    "husky": "^3.1.0"
   },
-  "standard": {
+  "eslint": {
     "globals": [
       "localStorage",
       "WebSocket"
