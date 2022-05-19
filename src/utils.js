@@ -1,21 +1,23 @@
-const isDevMode = () => {
-  try {
-    //  From sindresorhus/electron-is-dev, thanks to the author
-    const getFromEnv = parseInt(process.env.ELECTRON_IS_DEV, 10) === 1
-    const isEnvSet = "ELECTRON_IS_DEV" in process.env
-    return isEnvSet
-      ? getFromEnv
-      : process.defaultApp ||
-          /node_modules[\\/]electron[\\/]/.test(process.execPath)
-  } catch (e) {
-    console.warn(
-      "Nucleus: Could not detect if we're in dev mode, defaulting to false."
-    )
-    return false
+export const isDevMode = () => {
+  if (typeof process !== "undefined") {
+    try {
+      //  From sindresorhus/electron-is-dev, thanks to the author
+      const getFromEnv = parseInt(process.env.ELECTRON_IS_DEV, 10) === 1
+      const isEnvSet = "ELECTRON_IS_DEV" in process.env
+      return isEnvSet
+        ? getFromEnv
+        : process.defaultApp ||
+            /node_modules[\\/]electron[\\/]/.test(process.execPath)
+    } catch (e) {}
+  } else if (typeof window !== "undefined") {
+    // check if url is localhost
+    return window.location.hostname === "localhost"
   }
+
+  return false
 }
 
-const getStore = () => {
+export const getStore = () => {
   /* Will fail if no Node (like webpack) */
   try {
     const Conf = require("conf")
@@ -68,7 +70,7 @@ const getStore = () => {
 }
 
 // we use this for the save() calls to prevent EPERM & EBUSY errors
-const debounce = (func, interval) => {
+export const debounce = (func, interval) => {
   let timeout
 
   return function executedFunction(...args) {
@@ -82,16 +84,8 @@ const debounce = (func, interval) => {
   }
 }
 
-const getWsClient = () => {
+export const getWsClient = () => {
   /* If natively available (browser env) return it */
   if (typeof WebSocket !== "undefined") return WebSocket
   return require("ws")
-}
-
-module.exports = {
-  getUserId,
-  getStore,
-  debounce,
-  compareVersions,
-  getWsClient,
 }

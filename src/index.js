@@ -1,12 +1,7 @@
-import {
-  getWsClient,
-  getStore,
-  isDevMode,
-  generateUserId,
-  debounce,
-} from "./utils.js"
+import { getStore, getWsClient, isDevMode, debounce } from "./utils.js"
+import detectData from "./detectData.js"
 
-/* Either from browser or Node 'ws' */
+//import WebSocket from "ws" /* Removed in the browser */
 const WebSocket = getWsClient()
 const store = getStore()
 
@@ -19,7 +14,6 @@ let reportInterval = 20
 
 // All the stuff we'll need later globally
 let ws = null
-let gotInitted = false
 let localData = {}
 
 let queue = store.get("nucleus-queue") || []
@@ -29,7 +23,8 @@ const cache = store.get("nucleus-cache") || {}
 const Nucleus = {
   // not arrow function for access to this
   init: function (initAppId, options = {}) {
-    autoDetectData().then((detectedData) => {
+    detectData().then((detectedData) => {
+      console.log("detectedData", detectedData)
       localData = detectedData
 
       localData.appId = initAppId
@@ -38,17 +33,18 @@ const Nucleus = {
       debug = !!options.debug
       trackingOff = !!options.disableTracking
 
-      if (options.autoUserId) localData.userId = generateUserId()
       if (options.endpoint) endpoint = options.endpoint
 
       if (options.reportInterval) reportInterval = options.reportInterval
 
-      localData.sessionId = Math.floor(Math.random() * 1e6) + 1
+      this.track(null, null, "init")
 
       if (localData.appId && (!isDevMode() || useInDev)) {
         // Make sure we stay in sync
         // And save regularly to disk the latest events
         // Keeps live list of users updated too
+
+        reportData()
         setInterval(reportData, reportInterval * 1000)
 
         if (!options.disableErrorReports && typeof process !== "undefined") {
@@ -74,15 +70,6 @@ const Nucleus = {
         window.addEventListener("online", reportData)
       }
     })
-  },
-
-  /* Should only be ran once per session */
-  appStarted: function () {
-    gotInitted = true
-
-    this.track(null, null, "init")
-
-    reportData()
   },
 
   track: debounce((eventName, data = undefined, type = "event") => {
@@ -121,7 +108,6 @@ const Nucleus = {
         totalRam: localData.totalRam,
         version: localData.version,
         locale: localData.locale,
-        arch: localData.arch,
         moduleVersion: localData.moduleVersion,
       }
 
@@ -135,6 +121,8 @@ const Nucleus = {
 
   // Not arrow for this
   trackError: function (name, err) {
+    console.log(name, err)
+    if (!err) return
     // Convert Error to normal object, so we can stringify it
     const errObject = {
       stack: err.stack || err,
@@ -161,7 +149,7 @@ const Nucleus = {
     localData.userId = newId
 
     // only send event if we didn't init, else will be passed with init
-    if (gotInitted) this.track(null, null, "userid")
+    this.track(null, null, "userid")
   },
 
   // Allows to set custom properties to users
@@ -181,7 +169,7 @@ const Nucleus = {
     debounce(() => store.set("nucleus-props", props), 1000)
 
     // only send event if we didn't init, else will be passed with init
-    if (gotInitted) this.track(null, props, "props")
+    this.track(null, props, "props")
   },
 
   // Allows for setting both setting user and properties at the same time
@@ -191,7 +179,7 @@ const Nucleus = {
   },
 
   // Allows for tracking of pages users are visiting
-  screen: function (name, params) {
+  page: function (name, params) {
     if (!name || name.trim() === "") return false
 
     log("viewing screen " + name)
@@ -245,7 +233,7 @@ const reportData = () => {
 
   // If nothing to report no need to reopen connection if in main process
   // Except if we only report from main process
-  if (!queue.length && !gotInitted) return
+  if (!queue.length) return
 
   if (trackingOff) return
 
@@ -288,13 +276,6 @@ const messageFromServer = (message) => {
     // Cache (or update cache) the custom data
     cache.customData = data.customData
     debounce(() => store.set("nucleus-cache", cache), 1000)
-  }
-
-  if (data.latestVersion) {
-    // Get the app's latest version
-    latestVersion = data.latestVersion
-
-    Nucleus.checkUpdates()
   }
 
   if (data.reportedIds || data.confirmation) {

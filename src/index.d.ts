@@ -18,8 +18,8 @@ export interface Nucleus {
       /* change how often (in s) events should be refreshed (default: 20s) */
       reportInterval?: number;
     } 
-  ) => void;
-  appStarted: () => void;
+  ) => void
+
   setUserId: (id: number | string) => void;
   onError: (
     type: "uncaughtException" | "unhandledRejection" | "windowError",
@@ -34,7 +34,7 @@ export interface Nucleus {
     id: number | string,
     props: { [key: string]: string | number | boolean }
   ) => void;
-  screen: (
+  page: (
     name: number | string,
     params: { [key: string]: string | number | boolean }
   ) => void;
@@ -47,10 +47,8 @@ export interface Nucleus {
   getCustomData: (
     callback: (error: Error | null, customData?: any) => void
   ) => void;
-  checkUpdates: () => void;
-  onUpdate: ( version: string ) => void;
 }
 
-declare const nucleus: Nucleus;
+declare const nucleus: Nucleus
 
-export default nucleus;
+export default nucleus

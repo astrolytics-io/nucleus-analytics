@@ -1,4 +1,6 @@
-const autoDetectData = async () => {
+const createSessionId = () => Math.floor(Math.random() * 1e6) + 1
+
+const detectData = async () => {
   const localData = {
     appId: null,
     userId: null,
@@ -12,28 +14,21 @@ const autoDetectData = async () => {
     browser: null,
   }
 
-  // Try to find the package version with the package.json file
-  try {
-    const packageJson = await import("../package.json")
-    localData.version = packageJson.version
-  } catch (e) {
-    log("Could not find package.json file")
-  }
-
   /* Try to find version with Electron */
   try {
-    const { remote, app } = require("electron")
+    const { remote, app } = await import("electron")
     const electronApp = remote ? remote.app : app // Depends on process
 
     localData.version = isDevMode() ? "0.0.0" : electronApp.getVersion()
   } catch (e) {
-    log("Looks like it's not an Electron app.")
+    // log("Looks like it's not an Electron app.")
     // Electron not available
   }
 
-  /* Try to find OS stuff with Node */
-  /* And fallback to browser info else */
-  try {
+  if (typeof process !== "undefined") {
+    /* Find with Node */
+    /* And fallback to browser info else */
+
     const os = await import("os")
     const machineId = await import("node-machine-id")
     const uniqueId = await machineId.default.machineId()
@@ -45,33 +40,45 @@ const autoDetectData = async () => {
     localData.totalRam = os.totalmem() / Math.pow(1024, 3)
     localData.locale = osLocale.sync()
     localData.machineId = uniqueId
-  } catch (e) {
+  } else if (typeof navigator !== "undefined") {
     // Looks like Node is not available. Detecting without
 
-    if (typeof navigator !== "undefined") {
-      const { ClientJS } = await import("clientjs")
-      const client = new ClientJS()
+    const { ClientJS } = await import("clientjs")
+    const client = new ClientJS()
 
-      localData.platform = client.getOS()
-      localData.osVersion = client.getOSVersion()
-      localData.locale = client.getLanguage()
-      localData.totalRam = navigator.deviceMemory
-      localData.machineId = client.getFingerprint()
-      localData.browser = client.getBrowser()
+    localData.platform = client.getOS()
+    localData.osVersion = client.getOSVersion()
+    localData.locale = client.getLanguage()
+    localData.totalRam = navigator.deviceMemory
+    localData.machineId = client.getFingerprint()
+    localData.browser = client.getBrowser()
+  }
+
+  // see if the session id is set in sessionstorage otherwise create it
+  if (typeof sessionStorage !== "undefined") {
+    if (sessionStorage.getItem("sessionId")) {
+      localData.sessionId = sessionStorage.getItem("sessionId")
+    } else {
+      localData.sessionId = createSessionId()
+      sessionStorage.setItem("sessionId", localData.sessionId)
     }
+  } else {
+    localData.sessionId = createSessionId()
   }
 
-  const undetectedProps = Object.keys(localData).filter(
-    (prop) => !localData[prop]
-  )
+  // const undetectedProps = Object.keys(localData).filter(
+  //   (prop) => !localData[prop]
+  // )
 
-  if (undetectedProps.length) {
-    logError(
-      `Some properties couldn't be autodetected: ${undetectedProps.join(
-        ","
-      )}. Set them manually or data will be missing in the dashboard.`
-    )
-  }
+  // if (undetectedProps.length) {
+  //   logError(
+  //     `Some properties couldn't be autodetected: ${undetectedProps.join(
+  //       ","
+  //     )}. Set them manually or data will be missing in the dashboard.`
+  //   )
+  // }
+
+  return localData
 }
 
-export default autoDetectData
+export default detectData
