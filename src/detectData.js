@@ -12,6 +12,7 @@ const detectData = async () => {
     osVersion: null,
     totalRam: null,
     browser: null,
+    existingSession: false,
   }
 
   /* Try to find version with Electron */
@@ -58,6 +59,7 @@ const detectData = async () => {
   if (typeof sessionStorage !== "undefined") {
     if (sessionStorage.getItem("sessionId")) {
       localData.sessionId = sessionStorage.getItem("sessionId")
+      localData.existingSession = true
     } else {
       localData.sessionId = createSessionId()
       sessionStorage.setItem("sessionId", localData.sessionId)
@@ -65,18 +67,6 @@ const detectData = async () => {
   } else {
     localData.sessionId = createSessionId()
   }
-
-  // const undetectedProps = Object.keys(localData).filter(
-  //   (prop) => !localData[prop]
-  // )
-
-  // if (undetectedProps.length) {
-  //   logError(
-  //     `Some properties couldn't be autodetected: ${undetectedProps.join(
-  //       ","
-  //     )}. Set them manually or data will be missing in the dashboard.`
-  //   )
-  // }
 
   return localData
 }

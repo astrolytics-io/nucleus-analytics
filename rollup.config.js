@@ -8,7 +8,7 @@ export default {
   input: "src/index.js",
   inlineDynamicImports: true,
   output: {
-    file: "dist/index.js",
+    file: "dist/browser.js",
     format: "umd",
     name: "Nucleus",
   },

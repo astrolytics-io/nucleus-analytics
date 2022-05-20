@@ -1,7 +1,6 @@
 import { getStore, getWsClient, isDevMode, debounce } from "./utils.js"
 import detectData from "./detectData.js"
 
-//import WebSocket from "ws" /* Removed in the browser */
 const WebSocket = getWsClient()
 const store = getStore()
 
@@ -18,33 +17,39 @@ let localData = {}
 
 let queue = store.get("nucleus-queue") || []
 let props = store.get("nucleus-props") || {}
-const cache = store.get("nucleus-cache") || {}
 
 const Nucleus = {
   // not arrow function for access to this
   init: function (initAppId, options = {}) {
     detectData().then((detectedData) => {
-      console.log("detectedData", detectedData)
       localData = detectedData
 
       localData.appId = initAppId
+
+      const undetectedProps = Object.keys(localData).filter(
+        (prop) => !localData[prop]
+      )
+
+      if (undetectedProps.length) {
+        logWarn(
+          `Some properties couldn't be autodetected: ${undetectedProps.join(
+            ","
+          )}. Set them manually or data will be missing in the dashboard.`
+        )
+      }
 
       useInDev = !options.disableInDev
       debug = !!options.debug
       trackingOff = !!options.disableTracking
 
       if (options.endpoint) endpoint = options.endpoint
-
       if (options.reportInterval) reportInterval = options.reportInterval
-
-      this.track(null, null, "init")
 
       if (localData.appId && (!isDevMode() || useInDev)) {
         // Make sure we stay in sync
         // And save regularly to disk the latest events
-        // Keeps live list of users updated too
+        // Keeps realtime dashboard updated too
 
-        reportData()
         setInterval(reportData, reportInterval * 1000)
 
         if (!options.disableErrorReports && typeof process !== "undefined") {
@@ -57,24 +62,32 @@ const Nucleus = {
           })
         }
 
-        // Only if we are in a browser or renderer process
-        if (typeof window === "undefined") return
+        // don't track session start if we already did
+        if (!localData.existingSession) {
+          this.track(null, null, "init")
 
-        if (!options.disableErrorReports) {
-          window.onerror = (message, file, line, col, err) => {
-            this.trackError("windowError", err)
-          }
+          // wait for the debounce to finish
+          setTimeout(() => reportData(), 500)
         }
 
-        // Automatically send data when back online
-        window.addEventListener("online", reportData)
+        // Only if we are in a browser or renderer process
+        if (typeof window !== "undefined") {
+          if (!options.disableErrorReports) {
+            window.onerror = (message, file, line, col, err) => {
+              this.trackError("windowError", err)
+            }
+          }
+
+          // Automatically send data when back online
+          window.addEventListener("online", reportData)
+        }
       }
     })
   },
 
   track: debounce((eventName, data = undefined, type = "event") => {
     if (!localData.appId)
-      return logError("Missing APP ID before we can start tracking.")
+      return logWarn("Missing APP ID before we can start tracking.")
 
     if (!eventName && !type) return
     if (trackingOff || (isDevMode() && !useInDev)) return
@@ -89,9 +102,9 @@ const Nucleus = {
     const eventData = {
       type: type,
       name: eventName,
+      id: tempId,
       date: new Date(),
       appId: localData.appId,
-      id: tempId,
       userId: localData.userId,
       machineId: localData.machineId,
       sessionId: localData.sessionId,
@@ -121,7 +134,6 @@ const Nucleus = {
 
   // Not arrow for this
   trackError: function (name, err) {
-    console.log(name, err)
     if (!err) return
     // Convert Error to normal object, so we can stringify it
     const errObject = {
@@ -132,12 +144,6 @@ const Nucleus = {
     this.track(name, errObject, "error")
 
     if (typeof this.onError === "function") this.onError(name, err)
-  },
-
-  // Get the custom JSON data set from the dashboard
-  getCustomData: (callback) => {
-    // If it's already cached, pull it from here
-    return callback(null, cache.customData)
   },
 
   // So we can follow this user actions
@@ -180,7 +186,13 @@ const Nucleus = {
 
   // Allows for tracking of pages users are visiting
   page: function (name, params) {
-    if (!name || name.trim() === "") return false
+    if (!name || name.trim() === "") {
+      if (typeof window !== "undefined") {
+        name = window.location.pathname
+      } else {
+        return false
+      }
+    }
 
     log("viewing screen " + name)
 
@@ -229,6 +241,8 @@ const sendQueue = () => {
 // Try to report the data to the server
 const reportData = () => {
   // Write to file in case we are offline to save data
+  console.log("reporting data", queue.length)
+
   store.set("nucleus-queue", queue)
 
   // If nothing to report no need to reopen connection if in main process
@@ -244,11 +258,11 @@ const reportData = () => {
     ws = new WebSocket(`${endpoint}/app/${localData.appId}/track`)
 
     ws.onerror = (e) => {
-      logError(`ws ${e.code}: ${e.reason}`)
+      logWarn(`ws ${e.code}: ${e.reason}`)
     }
 
     ws.onclose = (e) => {
-      logError(`ws ${e.code}: ${e.reason}`)
+      logWarn(`ws ${e.code}: ${e.reason}`)
     }
 
     ws.onmessage = messageFromServer
@@ -268,14 +282,8 @@ const messageFromServer = (message) => {
   try {
     data = JSON.parse(message.data)
   } catch (e) {
-    logError("Could not parse message from server.")
+    logWarn("Could not parse message from server.")
     return
-  }
-
-  if (data.customData) {
-    // Cache (or update cache) the custom data
-    cache.customData = data.customData
-    debounce(() => store.set("nucleus-cache", cache), 1000)
   }
 
   if (data.reportedIds || data.confirmation) {
@@ -291,11 +299,11 @@ const messageFromServer = (message) => {
 }
 
 const log = (message) => {
-  if (debug) console.log("Nucleus:", message)
+  if (debug) console.log("Nucleus: " + message)
 }
 
-const logError = (message) => {
-  if (debug) console.warn("Nucleus Error:", message)
+const logWarn = (message) => {
+  if (debug) console.warn("Nucleus warning: " + message)
 }
 
 export default Nucleus

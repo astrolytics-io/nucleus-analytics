@@ -14,12 +14,12 @@ This module works in both the renderer and the main process, but **you should us
 This module can even run in a browser outside of Node (for example in the Electron renderer process with Node Integration disabled).
 
 ## V4.0 breaking changes
-- the .appStarted() method has been removed and integrated into .init()
+- the `.appStarted()` method has been removed and integrated into .init()
 - on Electron, the module is now made to be used in 1 process only (renderer recommended)
-- .screen() has been replaced by .page()
-- the module is now fully compatible with browser environments
+- `.screen()` has been replaced by .page()
+- the module is now 100% compatible with browser environments
 - the "autoUserId" option has been removed
-- the deprecated .checkUpdates() method has been removed
+- the deprecated `.checkUpdates()` method has been removed
 
 ## Installation
 
@@ -32,7 +32,7 @@ $ npm install nucleus-analytics --save
 In the browser:
 
 ```
-<scripts src="https://cdn.jsdelivr.net/gh/nucleus-sh/nucleus-javascript@browser-support/dist/index.min.js"></script>
+<scripts src="https://cdn.jsdelivr.net/gh/nucleus-sh/nucleus-javascript@browser-support/dist/browser.min.js"></script>
 
 <script>
 Nucleus.init("<Your App Id>")
