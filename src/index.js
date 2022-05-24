@@ -246,7 +246,9 @@ const sendQueue = () => {
 
 // Try to report the data to the server
 const reportData = () => {
-  // Save queue in case we are offline to save data
+  // remove events older than 48 hours
+  const cutoff = new Date().getTime() - 48 * 60 * 60 * 1000
+  queue = queue.filter((event) => event.date.getTime() > cutoff)
   save("queue", queue)
 
   // If nothing to report no need to reopen connection if in main process
