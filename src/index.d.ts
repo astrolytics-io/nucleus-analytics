@@ -1,5 +1,5 @@
-// Type definitions for nucleus-nodejs
-// Project: https://github.com/nucleus-sh/nucleus-nodejs
+// Type definitions for nucleus-analytics
+// Project: https://github.com/nucleus-sh/nucleus-analytics
 
 export interface Nucleus {
   init: ( 
@@ -13,18 +13,11 @@ export interface Nucleus {
       disableTracking?: boolean;
       /* disable errors reporting (default: false) */
       disableErrorReports?: boolean;
-      /* auto gives the user an id: username@hostname default: false) */
-      autoUserId?: boolean;
       /* change how often (in s) events should be refreshed (default: 20s) */
       reportInterval?: number;
     } 
   ) => void
-
   setUserId: (id: number | string) => void;
-  onError: (
-    type: "uncaughtException" | "unhandledRejection" | "windowError",
-    error: Error
-  ) => void;
   trackError: (name: string, error: Error) => void;
   setProps: (
     props: { [key: string]: string | number | boolean }, 
@@ -38,15 +31,16 @@ export interface Nucleus {
     name: number | string,
     params: { [key: string]: string | number | boolean }
   ) => void;
+  screen: (
+    name: number | string,
+    params: { [key: string]: string | number | boolean }
+  ) => void;
   track: (
     customEvent: string,
     data?: { [key: string]: string | number | boolean }
   ) => void;
   disableTracking: () => void;
   enableTracking: () => void;
-  getCustomData: (
-    callback: (error: Error | null, customData?: any) => void
-  ) => void;
 }
 
 declare const nucleus: Nucleus

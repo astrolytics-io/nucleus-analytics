@@ -1,4 +1,10 @@
-import { getStore, getWsClient, isDevMode, debounce } from "./utils.js"
+import {
+  getStore,
+  getWsClient,
+  isDevMode,
+  debounce,
+  throttle,
+} from "./utils.js"
 import detectData from "./detectData.js"
 
 const WebSocket = getWsClient()
@@ -51,6 +57,7 @@ const Nucleus = {
         // Keeps realtime dashboard updated too
 
         setInterval(reportData, reportInterval * 1000)
+        reportData()
 
         if (!options.disableErrorReports && typeof process !== "undefined") {
           process.on("uncaughtException", (err) => {
@@ -65,9 +72,6 @@ const Nucleus = {
         // don't track session start if we already did
         if (!localData.existingSession) {
           this.track(null, null, "init")
-
-          // wait for the debounce to finish
-          setTimeout(() => reportData(), 500)
         }
 
         // Only if we are in a browser or renderer process
@@ -85,7 +89,7 @@ const Nucleus = {
     })
   },
 
-  track: debounce((eventName, data = undefined, type = "event") => {
+  track: throttle((eventName, data = undefined, type = "event") => {
     if (!localData.appId)
       return logWarn("Missing APP ID before we can start tracking.")
 
@@ -142,8 +146,6 @@ const Nucleus = {
     }
 
     this.track(name, errObject, "error")
-
-    if (typeof this.onError === "function") this.onError(name, err)
   },
 
   // So we can follow this user actions
@@ -172,7 +174,7 @@ const Nucleus = {
     if (!overwrite) props = Object.assign(props, newProps)
     else props = newProps
 
-    debounce(() => store.set("nucleus-props", props), 1000)
+    save("props", props)
 
     // only send event if we didn't init, else will be passed with init
     this.track(null, props, "props")
@@ -199,6 +201,11 @@ const Nucleus = {
     this.track(name, params, "nucleus:view")
   },
 
+  // alias for page
+  screen: function (name, params) {
+    this.page(name, params)
+  },
+
   disableTracking: () => {
     trackingOff = true
     log("tracking disabled")
@@ -214,36 +221,33 @@ const sendQueue = () => {
   // Connection not opened?
   if (!ws || ws.readyState !== WebSocket.OPEN) {
     // persists current queue in case app is closed before sync
-    store.set("nucleus-queue", queue)
+    save("queue", queue)
     return
   }
 
+  log(`sending cached events (${queue.length})`)
+
+  const data = queue || []
+
   if (!queue.length) {
     // Nothing to report, send a heartbeat anyway
-    // (like if the connection was lost and is back)
     // only machine id is needed to derive the other infos server-side
 
-    const heartbeat = {
+    data.push({
       type: "heartbeat",
       machineId: localData.machineId,
-    }
-
-    return ws.send(JSON.stringify({ data: [heartbeat] }))
+    })
   }
 
-  const payload = { data: queue }
+  const payload = JSON.stringify({ data })
 
-  log("sending cached events (" + queue.length + ")")
-
-  ws.send(JSON.stringify(payload))
+  ws.send(payload)
 }
 
 // Try to report the data to the server
 const reportData = () => {
-  // Write to file in case we are offline to save data
-  console.log("reporting data", queue.length)
-
-  store.set("nucleus-queue", queue)
+  // Save queue in case we are offline to save data
+  save("queue", queue)
 
   // If nothing to report no need to reopen connection if in main process
   // Except if we only report from main process
@@ -294,9 +298,17 @@ const messageFromServer = (message) => {
       queue = queue.filter((e) => !data.reportedIds.includes(e.id))
     else if (data.confirmation) queue = [] // Legacy handling
 
-    debounce(() => store.set("nucleus-queue", queue), 1000)
+    save("queue", queue)
   }
 }
+
+const save = debounce(
+  (what, data) => {
+    store.set("nucleus-" + what, data)
+  },
+  500,
+  true
+)
 
 const log = (message) => {
   if (debug) console.log("Nucleus: " + message)

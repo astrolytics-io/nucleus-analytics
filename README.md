@@ -1,6 +1,6 @@
 # nucleus-analytics [![npm](https://img.shields.io/npm/v/nucleus-analytics.svg)](https://www.npmjs.com/package/nucleus-analytics)
 
-Isomorphic analytics and bug tracking for browser, Node.js, Electron and NW.js desktop applications.
+Isomorphic analytics and error tracking library for browser, Node.js, Electron and NW.js desktop applications.
 
 We made it as simple as possible to report the data you need to analyze your app and improve it.
 
@@ -8,7 +8,7 @@ To start using this module, sign up and get an app ID on [Nucleus.sh](https://nu
 
 <b>Electron:</b>
 
-This module works in both the renderer and the main process, but **you should use it in one process only, optherwise you'll see duplicated data.**
+This module works in both the renderer and the main process, but **you should use it in one process only, optherwise you'll see duplicate data.**
 
 
 This module can even run in a browser outside of Node (for example in the Electron renderer process with Node Integration disabled).
@@ -16,7 +16,7 @@ This module can even run in a browser outside of Node (for example in the Electr
 ## V4.0 breaking changes
 - the `.appStarted()` method has been removed and integrated into .init()
 - on Electron, the module is now made to be used in 1 process only (renderer recommended)
-- `.screen()` has been replaced by .page()
+- `.screen()` has been replaced by `.page()` (but is still available as an alias)
 - the module is now 100% compatible with browser environments
 - the "autoUserId" option has been removed
 - the deprecated `.checkUpdates()` method has been removed
@@ -32,7 +32,7 @@ $ npm install nucleus-analytics --save
 In the browser:
 
 ```
-<scripts src="https://cdn.jsdelivr.net/gh/nucleus-sh/nucleus-javascript@browser-support/dist/browser.min.js"></script>
+<scripts src="https://cdn.jsdelivr.net/gh/nucleus-sh/nucleus-analytics@browser-support/dist/browser.min.js"></script>
 
 <script>
 Nucleus.init("<Your App Id>")
@@ -186,16 +186,16 @@ Nucleus.track("PLAYED_TRACK", {
 
 You can set up Nucleus to track page visits and screen views in your app.
 
-For that, whenever the user navigates to a different page, call the `.screen()` method with the new view name.
+For that, whenever the user navigates to a different page, call the `.page()` method with the new view name.
 
 ```javascript
-Nucleus.screen("View Name")
+Nucleus.page("View Name")
 ```
 
 You can attach extra info about the view. Example: 
 
 ```javascript
-Nucleus.screen("Cart", {
+Nucleus.page("Cart", {
   action: "addItem",
   count: 5
 })
@@ -224,20 +224,9 @@ This change won't persist after restarts so you have to handle the saving of the
 
 You can also supply a `disableTracking: true` option to the module on start if you want to directly prevent tracking.
 
-### Errors
+### Error tracking
 
-Nucleus will by default report all `uncaughtException` and `unhandledRejection`.
-
-If you'd like to act on these errors, for example show them to your user, quit the app or reload it, you can define an onError function, which will be called on errors happening on the respective process.
-
-```javascript
-Nucleus.onError = (type, err) => {
-  console.error(err)
-  // type will either be uncaughtException, unhandledRejection or windowError
-}
-```
-
-`windowError` is an `uncaughtException` that happened in the renderer process. It was catched with `window.onerror`.
+Nucleus will by default report all `uncaughtException`, `unhandledRejection` and `windowError` events.
 
 If you'd like to report another type of error, you can do so with:
 

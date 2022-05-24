@@ -69,18 +69,36 @@ export const getStore = () => {
   }
 }
 
-// we use this for the save() calls to prevent EPERM & EBUSY errors
-export const debounce = (func, interval) => {
-  let timeout
-
-  return function executedFunction(...args) {
-    const later = () => {
-      clearTimeout(timeout)
-      func(...args)
+// for the save() calls to prevent EPERM & EBUSY errors
+// If `immediate` is passed, trigger the function on the
+// leading edge, instead of the trailing.
+export const debounce = (func, wait, immediate) => {
+  var timeout
+  return function () {
+    var context = this,
+      args = arguments
+    var later = function () {
+      timeout = null
+      if (!immediate) func.apply(context, args)
     }
-
+    var callNow = immediate && !timeout
     clearTimeout(timeout)
-    timeout = setTimeout(later, interval)
+    timeout = setTimeout(later, wait)
+    if (callNow) func.apply(context, args)
+  }
+}
+
+// and prevent burst of events sent to the server
+export const throttle = (func, limit) => {
+  let inThrottle
+  return function () {
+    const args = arguments
+    const context = this
+    if (!inThrottle) {
+      func.apply(context, args)
+      inThrottle = true
+      setTimeout(() => (inThrottle = false), limit)
+    }
   }
 }
 
