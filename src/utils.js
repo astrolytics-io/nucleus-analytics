@@ -10,8 +10,11 @@ export const isDevMode = () => {
             /node_modules[\\/]electron[\\/]/.test(process.execPath)
     } catch (e) {}
   } else if (typeof window !== "undefined") {
-    // check if url is localhost
-    return window.location.hostname === "localhost"
+    // check if url is localhost or local file
+    return (
+      window.location.hostname === "localhost" ||
+      window.location.protocol === "file:"
+    )
   }
 
   return false

@@ -20,6 +20,8 @@ This module can even run in a browser outside of Node (for example in the Electr
 - the module is now 100% compatible with browser environments
 - the "autoUserId" option has been removed
 - the deprecated `.checkUpdates()` method has been removed
+- events are throttle to 20/s maximum
+- stop tracking device ram and arch
 
 ## Installation
 

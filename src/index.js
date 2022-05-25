@@ -5,7 +5,7 @@ import {
   debounce,
   throttle,
 } from "./utils.js"
-import detectData from "./detectData.js"
+import { detectData, detectSessionId } from "./detectData.js"
 
 const WebSocket = getWsClient()
 const store = getStore()
@@ -24,13 +24,106 @@ let localData = {}
 let queue = store.get("nucleus-queue") || []
 let props = store.get("nucleus-props") || {}
 
+const track = (name, data = undefined, type = "event") => {
+  if (!name && !type) return
+  if (trackingOff || (isDevMode() && !useInDev)) return
+
+  log("adding to queue: " + (name || type))
+
+  // An ID for the event so when the server returns it we know it was reported
+  const tempId = Math.floor(Math.random() * 1e6) + 1
+
+  if (type === "init" && props) data = props
+
+  const { sessionId } = localData
+
+  const eventData = {
+    type,
+    name,
+    id: tempId,
+    date: new Date(),
+    payload: data,
+    sessionId,
+  }
+
+  queue.push(eventData)
+}
+
+const completeEvents = (events) => {
+  return events.map((event) => {
+    const { type } = event
+    const { userId, machineId } = localData
+
+    let newEvent = {
+      ...event,
+      userId,
+      machineId,
+    }
+
+    // So we don't send unnecessary data when not needed
+    // (= first event, and on error)
+    if (type && ["init", "error"].includes(type)) {
+      const { platform, osVersion, version, locale, moduleVersion } = localData
+
+      const extra = {
+        client: "js",
+        platform,
+        osVersion,
+        version,
+        locale,
+        moduleVersion,
+      }
+
+      newEvent = { ...newEvent, ...extra }
+    }
+
+    return newEvent
+  })
+}
+
 const Nucleus = {
   // not arrow function for access to this
-  init: function (initAppId, options = {}) {
-    detectData().then((detectedData) => {
-      localData = detectedData
+  init: function (appId, options = {}) {
+    useInDev = !options.disableInDev
+    debug = !!options.debug
+    trackingOff = !!options.disableTracking
 
-      localData.appId = initAppId
+    if (options.endpoint) endpoint = options.endpoint
+    if (options.reportInterval) reportInterval = options.reportInterval
+
+    if (!appId) return console.error("Nucleus: missing app ID")
+
+    localData = { ...detectSessionId(), appId }
+
+    // don't track session start if we already did
+    if (!localData.existingSession) {
+      track(null, null, "init")
+    }
+
+    if (!options.disableErrorReports && typeof process !== "undefined") {
+      process.on("uncaughtException", (err) => {
+        this.trackError("uncaughtException", err)
+      })
+
+      process.on("unhandledRejection", (err) => {
+        this.trackError("unhandledRejection", err)
+      })
+    }
+
+    // Only if we are in a browser or renderer process
+    if (typeof window !== "undefined") {
+      if (!options.disableErrorReports) {
+        window.onerror = (message, file, line, col, err) => {
+          this.trackError("windowError", err)
+        }
+      }
+
+      // Automatically send data when back online
+      window.addEventListener("online", reportData)
+    }
+
+    detectData().then((detectedData) => {
+      localData = { ...localData, ...detectedData }
 
       const undetectedProps = Object.keys(localData).filter(
         (prop) => !localData[prop]
@@ -38,103 +131,25 @@ const Nucleus = {
 
       if (undetectedProps.length) {
         logWarn(
-          `Some properties couldn't be autodetected: ${undetectedProps.join(
+          `Some properties couldn't be detected: ${undetectedProps.join(
             ","
           )}. Set them manually or data will be missing in the dashboard.`
         )
       }
 
-      useInDev = !options.disableInDev
-      debug = !!options.debug
-      trackingOff = !!options.disableTracking
+      if (isDevMode() && !useInDev)
+        return log("in dev mode, not reporting data anything")
 
-      if (options.endpoint) endpoint = options.endpoint
-      if (options.reportInterval) reportInterval = options.reportInterval
+      // Make sure we stay in sync
+      // And save regularly to disk the latest events
+      // Keeps realtime dashboard updated too
 
-      if (localData.appId && (!isDevMode() || useInDev)) {
-        // Make sure we stay in sync
-        // And save regularly to disk the latest events
-        // Keeps realtime dashboard updated too
-
-        setInterval(reportData, reportInterval * 1000)
-        reportData()
-
-        if (!options.disableErrorReports && typeof process !== "undefined") {
-          process.on("uncaughtException", (err) => {
-            this.trackError("uncaughtException", err)
-          })
-
-          process.on("unhandledRejection", (err) => {
-            this.trackError("unhandledRejection", err)
-          })
-        }
-
-        // don't track session start if we already did
-        if (!localData.existingSession) {
-          this.track(null, null, "init")
-        }
-
-        // Only if we are in a browser or renderer process
-        if (typeof window !== "undefined") {
-          if (!options.disableErrorReports) {
-            window.onerror = (message, file, line, col, err) => {
-              this.trackError("windowError", err)
-            }
-          }
-
-          // Automatically send data when back online
-          window.addEventListener("online", reportData)
-        }
-      }
+      setInterval(reportData, reportInterval * 1000)
+      reportData()
     })
   },
 
-  track: throttle((eventName, data = undefined, type = "event") => {
-    if (!localData.appId)
-      return logWarn("Missing APP ID before we can start tracking.")
-
-    if (!eventName && !type) return
-    if (trackingOff || (isDevMode() && !useInDev)) return
-
-    log("adding to queue: " + (eventName || type))
-
-    // An ID for the event so when the server returns it we know it was reported
-    const tempId = Math.floor(Math.random() * 1e6) + 1
-
-    if (type === "init" && props) data = props
-
-    const eventData = {
-      type: type,
-      name: eventName,
-      id: tempId,
-      date: new Date(),
-      appId: localData.appId,
-      userId: localData.userId,
-      machineId: localData.machineId,
-      sessionId: localData.sessionId,
-      payload: data,
-    }
-
-    // So we don't send unnecessary data when not needed
-    // (= first event, and on error)
-    if (type && ["init", "error"].includes(type)) {
-      const extra = {
-        client: "js",
-        platform: localData.platform,
-        osVersion: localData.osVersion,
-        totalRam: localData.totalRam,
-        version: localData.version,
-        locale: localData.locale,
-        moduleVersion: localData.moduleVersion,
-      }
-
-      Object.keys(extra).forEach((key) => {
-        eventData[key] = extra[key]
-      }) // Arrow function should not return assignment.
-    }
-
-    queue.push(eventData)
-  }, 100),
+  track: throttle(track, 50),
 
   // Not arrow for this
   trackError: function (name, err) {
@@ -227,20 +242,19 @@ const sendQueue = () => {
 
   log(`sending cached events (${queue.length})`)
 
-  const data = queue || []
+  // if nothing to report, send a heartbeat anyway
+  // only machine id is needed to derive the other infos server-side
 
-  if (!queue.length) {
-    // Nothing to report, send a heartbeat anyway
-    // only machine id is needed to derive the other infos server-side
-
-    data.push({
-      type: "heartbeat",
-      machineId: localData.machineId,
-    })
-  }
+  const data = queue.length
+    ? completeEvents(queue)
+    : [
+        {
+          type: "heartbeat",
+          machineId: localData.machineId,
+        },
+      ]
 
   const payload = JSON.stringify({ data })
-
   ws.send(payload)
 }
 
@@ -248,12 +262,8 @@ const sendQueue = () => {
 const reportData = () => {
   // remove events older than 48 hours
   const cutoff = new Date().getTime() - 48 * 60 * 60 * 1000
-  queue = queue.filter((event) => event.date.getTime() > cutoff)
+  queue = queue.filter((event) => new Date(event.date).getTime() > cutoff)
   save("queue", queue)
-
-  // If nothing to report no need to reopen connection if in main process
-  // Except if we only report from main process
-  if (!queue.length) return
 
   if (trackingOff) return
 
@@ -276,7 +286,7 @@ const reportData = () => {
     ws.onopen = sendQueue
   }
 
-  if (queue.length) sendQueue()
+  sendQueue()
 }
 
 // Received a message from the server
@@ -312,12 +322,12 @@ const save = debounce(
   true
 )
 
-const log = (message) => {
-  if (debug) console.log("Nucleus: " + message)
+const log = (msg) => {
+  if (debug) console.log("Nucleus: " + msg)
 }
 
-const logWarn = (message) => {
-  if (debug) console.warn("Nucleus warning: " + message)
+const logWarn = (msg) => {
+  if (debug) console.warn("Nucleus warning: " + msg)
 }
 
 export default Nucleus
