@@ -34,12 +34,11 @@ $ npm install nucleus-analytics --save
 In the browser:
 
 ```
-<scripts src="https://cdn.jsdelivr.net/gh/nucleus-sh/nucleus-analytics@browser-support/dist/browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/nucleus-sh/nucleus-analytics@browser-support/dist/browser.min.js"></script>
 
 <script>
 Nucleus.init("<Your App Id>")
 </script>
-
 ```
 
 ## Usage

@@ -22,7 +22,7 @@ export const detectSessionId = () => {
 
 export const detectData = async () => {
   const data = {
-    machineId: null,
+    deviceId: null,
     version: "0.0.0",
     locale: null,
     platform: null,
@@ -53,17 +53,18 @@ export const detectData = async () => {
     data.platform = os.type()
     data.osVersion = os.release()
     data.locale = osLocale.sync()
-    data.machineId = uniqueId
+    data.deviceId = uniqueId
   } else if (typeof navigator !== "undefined") {
     // Looks like Node is not available. Detecting without
 
     const { ClientJS } = await import("clientjs")
     const client = new ClientJS()
+    const fingerprint = client.getFingerprint()
 
     data.platform = client.getOS()
     data.osVersion = client.getOSVersion()
     data.locale = client.getLanguage()
-    data.machineId = client.getFingerprint()
+    data.deviceId = fingerprint.toString()
     data.browser = client.getBrowser()
   }
 

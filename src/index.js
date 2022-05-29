@@ -52,12 +52,12 @@ const track = (name, data = undefined, type = "event") => {
 const completeEvents = (events) => {
   return events.map((event) => {
     const { type } = event
-    const { userId, machineId } = localData
+    const { userId, deviceId } = localData
 
     let newEvent = {
       ...event,
       userId,
-      machineId,
+      deviceId,
     }
 
     // So we don't send unnecessary data when not needed
@@ -250,7 +250,7 @@ const sendQueue = () => {
     : [
         {
           type: "heartbeat",
-          machineId: localData.machineId,
+          deviceId: localData.deviceId,
         },
       ]
 
