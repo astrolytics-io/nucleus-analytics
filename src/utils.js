@@ -91,20 +91,6 @@ export const debounce = (func, wait, immediate) => {
   }
 }
 
-// and prevent burst of events sent to the server
-export const throttle = (func, limit) => {
-  let inThrottle
-  return function () {
-    const args = arguments
-    const context = this
-    if (!inThrottle) {
-      func.apply(context, args)
-      inThrottle = true
-      setTimeout(() => (inThrottle = false), limit)
-    }
-  }
-}
-
 export const getWsClient = () => {
   /* If natively available (browser env) return it */
   if (typeof WebSocket !== "undefined") return WebSocket

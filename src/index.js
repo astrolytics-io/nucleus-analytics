@@ -1,11 +1,8 @@
-import {
-  getStore,
-  getWsClient,
-  isDevMode,
-  debounce,
-  throttle,
-} from "./utils.js"
+import { getStore, getWsClient, isDevMode, debounce } from "./utils.js"
 import { detectData, detectSessionId } from "./detectData.js"
+import throttledQueue from "throttled-queue"
+
+const throttle = throttledQueue(20, 1000) // at most 20 requests per second.
 
 const WebSocket = getWsClient()
 const store = getStore()
@@ -20,39 +17,16 @@ let reportInterval = 20
 // All the stuff we'll need later globally
 let ws = null
 let localData = {}
+let initted = false
 
 let queue = store.get("nucleus-queue") || []
 let props = store.get("nucleus-props") || {}
-
-const track = (name, data = undefined, type = "event") => {
-  if (!name && !type) return
-  if (trackingOff || (isDevMode() && !useInDev)) return
-
-  log("adding to queue: " + (name || type))
-
-  // An ID for the event so when the server returns it we know it was reported
-  const tempId = Math.floor(Math.random() * 1e6) + 1
-
-  if (type === "init" && props) data = props
-
-  const { sessionId } = localData
-
-  const eventData = {
-    type,
-    name,
-    id: tempId,
-    date: new Date(),
-    payload: data,
-    sessionId,
-  }
-
-  queue.push(eventData)
-}
+let userId = store.get("nucleus-userId") || null
 
 const completeEvents = (events) => {
   return events.map((event) => {
     const { type } = event
-    const { userId, deviceId } = localData
+    const { deviceId } = localData
 
     let newEvent = {
       ...event,
@@ -97,7 +71,8 @@ const Nucleus = {
 
     // don't track session start if we already did
     if (!localData.existingSession) {
-      track(null, null, "init")
+      this.track(null, null, "init")
+      initted = true
     }
 
     if (!options.disableErrorReports && typeof process !== "undefined") {
@@ -149,7 +124,40 @@ const Nucleus = {
     })
   },
 
-  track: throttle(track, 50),
+  track: (name, data = undefined, type = "event", oldUserId) =>
+    throttle(() => {
+      if (!name && !type) return
+      if (trackingOff || (isDevMode() && !useInDev)) return
+
+      log("adding to queue: " + (name || type))
+
+      // An ID for the event so when the server returns it we know it was reported
+      const tempId = Math.floor(Math.random() * 1e6) + 1
+
+      if (type === "init" && props) data = props
+
+      const timestamp =
+        type === "init" ? new Date() - 1000 : new Date().getTime()
+
+      const { sessionId } = localData
+
+      const eventData = {
+        type,
+        name,
+        id: tempId,
+        date: timestamp, // make sure init is first event in db
+        payload: data,
+        sessionId,
+      }
+
+      // report old user id if it changed so we can update
+      if (["init", "userid"].includes(type) && oldUserId) {
+        console.log("old user id", oldUserId)
+        eventData.oldUserId = oldUserId
+      }
+
+      queue.push(eventData)
+    }),
 
   // Not arrow for this
   trackError: function (name, err) {
@@ -169,10 +177,12 @@ const Nucleus = {
 
     log("user id set to " + newId)
 
-    localData.userId = newId
+    const oldUserId = userId
+    userId = newId
+    save("nucleus-userId", newId)
 
-    // only send event if we didn't init, else will be passed with init
-    this.track(null, null, "userid")
+    // pass with init if we didn't init yet
+    if (initted) this.track(null, null, "userid", oldUserId)
   },
 
   // Allows to set custom properties to users
@@ -191,14 +201,14 @@ const Nucleus = {
 
     save("props", props)
 
-    // only send event if we didn't init, else will be passed with init
-    this.track(null, props, "props")
+    // pass with init if we didn't init yet
+    if (initted) this.track(null, props, "props")
   },
 
   // Allows for setting both setting user and properties at the same time
   identify: function (newId, newProps) {
     this.setUserId(newId)
-    this.setProps(newProps, true)
+    if (newProps) this.setProps(newProps, true)
   },
 
   // Allows for tracking of pages users are visiting
@@ -251,10 +261,13 @@ const sendQueue = () => {
         {
           type: "heartbeat",
           deviceId: localData.deviceId,
+          userId,
         },
       ]
 
   const payload = JSON.stringify({ data })
+  log(payload)
+
   ws.send(payload)
 }
 

@@ -46,14 +46,14 @@ export const detectData = async () => {
 
     const os = await import("os")
     const machineId = await import("node-machine-id")
+    const username = os.userInfo().username
     const uniqueId = await machineId.default.machineId()
-
     const osLocale = await import("os-locale")
 
     data.platform = os.type()
     data.osVersion = os.release()
     data.locale = osLocale.sync()
-    data.deviceId = uniqueId
+    data.deviceId = uniqueId + username // unique per user session
   } else if (typeof navigator !== "undefined") {
     // Looks like Node is not available. Detecting without
 

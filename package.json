@@ -28,16 +28,18 @@
     "url": "https://github.com/nucleus-sh/nucleus-analytics/issues"
   },
   "homepage": "https://nucleus.sh",
-  "dependencies": {},
+  "dependencies": {
+    "throttled-queue": "^2.1.4"
+  },
   "prettier": {
     "semi": false
   },
   "optionalDependencies": {
+    "clientjs": "^0.2.1",
     "conf": "^9.0.0",
     "node-machine-id": "^1.1.12",
     "os-locale": "^5.0.0",
-    "ws": "^7.4.6",
-    "clientjs": "^0.2.1"
+    "ws": "^7.4.6"
   },
   "devDependencies": {
     "@rollup/plugin-commonjs": "^22.0.0",

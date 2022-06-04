@@ -8,14 +8,15 @@ To start using this module, sign up and get an app ID on [Nucleus.sh](https://nu
 
 <b>Electron:</b>
 
-This module works in both the renderer and the main process, but **you should use it in one process only, optherwise you'll see duplicate data.**
-
+This module works in both the renderer and the main process, but **you should use it in one process only, optherwise you'll see duplicate data. We recommend the renderer process.**
 
 This module can even run in a browser outside of Node (for example in the Electron renderer process with Node Integration disabled).
 
 ## V4.0 breaking changes
 - the `.appStarted()` method has been removed and integrated into .init()
+- anonymous users are automatically tracked
 - on Electron, the module is now made to be used in 1 process only (renderer recommended)
+- The device ID is now different between user sessions (existing users will count as new users on the dashboard)
 - `.screen()` has been replaced by `.page()` (but is still available as an alias)
 - the module is now 100% compatible with browser environments
 - the "autoUserId" option has been removed
@@ -128,7 +129,6 @@ Later on, you can update the userId only (and keep the attributes) with this met
 Nucleus.setUserId("someUniqueUserId")
 ```
 
-Alternatively, set the `autoUserId` option of the module to `true` to automatically assign the user an ID based on his username and hostname.
 
 ### Update user attributes
 
