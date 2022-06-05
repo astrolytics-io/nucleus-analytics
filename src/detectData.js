@@ -60,9 +60,12 @@ export const detectData = async () => {
     const { ClientJS } = await import("clientjs")
     const client = new ClientJS()
     const fingerprint = client.getFingerprint()
+    const isIpad =
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 0) ||
+      navigator.platform === "iPad" // iPad Pros UA is same as Mac
 
-    data.platform = client.getOS()
-    data.osVersion = client.getOSVersion()
+    data.platform = isIpad ? "iPadOS" : client.getOS()
+    data.osVersion = isIpad ? client.getBrowserVersion() : client.getOSVersion() // iOS version is same as browser version
     data.locale = client.getLanguage()
     data.deviceId = fingerprint.toString()
     data.browser = client.getBrowser()
