@@ -1,6 +1,7 @@
 import { getStore, getWsClient, isDevMode, debounce } from "./utils.js"
 import { detectData, detectSessionId } from "./detectData.js"
 import throttledQueue from "throttled-queue"
+import { nanoid } from "nanoid"
 
 const throttle = throttledQueue(20, 1000) // at most 20 requests per second.
 
@@ -19,18 +20,23 @@ let ws = null
 let localData = {}
 let initted = false
 
-let queue = store.get("nucleus-queue") || []
-let props = store.get("nucleus-props") || {}
-let userId = store.get("nucleus-userId") || null
+const stored = {
+  queue: store.get("nucleus-queue") || [],
+  props: store.get("nucleus-props") || {},
+  userId: store.get("nucleus-userId") || null,
+  anonId: store.get("nucleus-anonId") || null,
+}
 
 const completeEvents = (events) => {
   return events.map((event) => {
     const { type } = event
     const { deviceId } = localData
+    const { userId, anonId } = stored
 
     let newEvent = {
       ...event,
       userId,
+      anonId,
       deviceId,
     }
 
@@ -66,6 +72,8 @@ const Nucleus = {
     if (options.reportInterval) reportInterval = options.reportInterval
 
     if (!appId) return console.error("Nucleus: missing app ID")
+
+    if (!stored.anonId) save("anonId", nanoid(12))
 
     localData = { ...detectSessionId(), appId }
 
@@ -134,7 +142,7 @@ const Nucleus = {
       // An ID for the event so when the server returns it we know it was reported
       const tempId = Math.floor(Math.random() * 1e6) + 1
 
-      if (type === "init" && props) data = props
+      if (type === "init" && stored.props) data = stored.props
 
       const timestamp =
         type === "init" ? new Date() - 1000 : new Date().getTime()
@@ -152,11 +160,10 @@ const Nucleus = {
 
       // report old user id if it changed so we can update
       if (["init", "userid"].includes(type) && oldUserId) {
-        console.log("old user id", oldUserId)
         eventData.oldUserId = oldUserId
       }
 
-      queue.push(eventData)
+      save("queue", [...stored.queue, eventData])
     }),
 
   // Not arrow for this
@@ -177,11 +184,10 @@ const Nucleus = {
 
     log("user id set to " + newId)
 
-    const oldUserId = userId
-    userId = newId
-    save("nucleus-userId", newId)
+    const oldUserId = stored.userId
+    save("userId", newId)
 
-    // pass with init if we didn't init yet
+    // if we already initted, send the new id
     if (initted) this.track(null, null, "userid", oldUserId)
   },
 
@@ -196,13 +202,11 @@ const Nucleus = {
     }
 
     // Merge past and new props
-    if (!overwrite) props = Object.assign(props, newProps)
-    else props = newProps
+    if (!overwrite) save("props", Object.assign(stored.props, newProps))
+    else save("props", newProps)
 
-    save("props", props)
-
-    // pass with init if we didn't init yet
-    if (initted) this.track(null, props, "props")
+    // if we already initted, send the new props
+    if (initted) this.track(null, stored.props, "props")
   },
 
   // Allows for setting both setting user and properties at the same time
@@ -244,24 +248,20 @@ const Nucleus = {
 
 const sendQueue = () => {
   // Connection not opened?
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
-    // persists current queue in case app is closed before sync
-    save("queue", queue)
-    return
-  }
+  if (!ws || ws.readyState !== WebSocket.OPEN) return
 
-  log(`sending cached events (${queue.length})`)
+  log(`sending stored events (${stored.queue.length})`)
 
   // if nothing to report, send a heartbeat anyway
-  // only machine id is needed to derive the other infos server-side
+  // only device & anonId id needed to derive the other infos server-side
 
-  const data = queue.length
+  const data = stored.queue.length
     ? completeEvents(queue)
     : [
         {
           type: "heartbeat",
           deviceId: localData.deviceId,
-          userId,
+          anonId: stored.anonId,
         },
       ]
 
@@ -275,8 +275,10 @@ const sendQueue = () => {
 const reportData = () => {
   // remove events older than 48 hours
   const cutoff = new Date().getTime() - 48 * 60 * 60 * 1000
-  queue = queue.filter((event) => new Date(event.date).getTime() > cutoff)
-  save("queue", queue)
+  save(
+    "queue",
+    stored.queue.filter((event) => new Date(event.date).getTime() > cutoff)
+  )
 
   if (trackingOff) return
 
@@ -315,25 +317,31 @@ const messageFromServer = (message) => {
     return
   }
 
+  if (data.anonId) {
+    log("anonId received from server " + data.anonId)
+    save("anonId", data.anonId)
+  }
+
   if (data.reportedIds || data.confirmation) {
     // Data was successfully reported, we can empty the queue
     log("Server successfully registered our data.")
 
-    if (data.reportedIds)
-      queue = queue.filter((e) => !data.reportedIds.includes(e.id))
-    else if (data.confirmation) queue = [] // Legacy handling
-
-    save("queue", queue)
+    if (data.reportedIds) {
+      save(
+        "queue",
+        stored.queue.filter((e) => !data.reportedIds.includes(e.id))
+      )
+    } else if (data.confirmation) {
+      save("queue", [])
+    }
+    // Legacy handling
   }
 }
 
-const save = debounce(
-  (what, data) => {
-    store.set("nucleus-" + what, data)
-  },
-  500,
-  true
-)
+const save = (what, data) => {
+  stored[what] = data
+  debounce(store.set("nucleus-" + what, data), 500, true)
+}
 
 const log = (msg) => {
   if (debug) console.log("Nucleus: " + msg)

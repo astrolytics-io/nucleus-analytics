@@ -2,6 +2,7 @@ import resolve from "@rollup/plugin-node-resolve"
 import commonjs from "@rollup/plugin-commonjs"
 import json from "@rollup/plugin-json"
 import ignore from "rollup-plugin-ignore"
+
 import { terser } from "rollup-plugin-terser"
 
 export default {
@@ -15,7 +16,9 @@ export default {
   plugins: [
     // ignore modules only in node
     ignore(["ws", "electron", "node-machine-id", "conf", "os-locale"]),
-    resolve(),
+    resolve({
+      browser: true,
+    }),
     commonjs(),
     json(),
     terser(),
