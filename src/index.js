@@ -250,7 +250,7 @@ const sendQueue = () => {
   // only device & anonId id needed to derive the other infos server-side
 
   const data = stored.queue.length
-    ? completeEvents(queue)
+    ? completeEvents(stored.queue)
     : [
         {
           type: "heartbeat",
