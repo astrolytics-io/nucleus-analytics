@@ -132,7 +132,7 @@ const Nucleus = {
     })
   },
 
-  track: (name, data = undefined, type = "event", oldUserId) =>
+  track: (name, data = undefined, type = "event") =>
     throttle(() => {
       if (!name && !type) return
       if (trackingOff || (isDevMode() && !useInDev)) return
@@ -158,11 +158,6 @@ const Nucleus = {
         sessionId,
       }
 
-      // report old user id if it changed so we can update
-      if (["init", "userid"].includes(type) && oldUserId) {
-        eventData.oldUserId = oldUserId
-      }
-
       save("queue", [...stored.queue, eventData])
     }),
 
@@ -184,11 +179,10 @@ const Nucleus = {
 
     log("user id set to " + newId)
 
-    const oldUserId = stored.userId
     save("userId", newId)
 
     // if we already initted, send the new id
-    if (initted) this.track(null, null, "userid", oldUserId)
+    if (initted) this.track(null, null, "userid")
   },
 
   // Allows to set custom properties to users
