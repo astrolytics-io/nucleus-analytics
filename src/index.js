@@ -246,19 +246,14 @@ const sendQueue = () => {
 
   log(`sending stored events (${stored.queue.length})`)
 
+  if (!stored.queue.length) {
+    save("queue", [{ type: "heartbeat" }])
+  }
+
   // if nothing to report, send a heartbeat anyway
   // only device & anonId id needed to derive the other infos server-side
 
-  const data = stored.queue.length
-    ? completeEvents(stored.queue)
-    : [
-        {
-          type: "heartbeat",
-          deviceId: localData.deviceId,
-          anonId: stored.anonId,
-        },
-      ]
-
+  const data = completeEvents(stored.queue)
   const payload = JSON.stringify({ data })
   log(payload)
 
