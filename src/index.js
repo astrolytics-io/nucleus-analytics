@@ -57,6 +57,13 @@ const completeEvents = (events) => {
       newEvent = { ...newEvent, ...extra }
     }
 
+    // remove null and undefined values
+    Object.keys(newEvent).forEach((key) => {
+      if (newEvent[key] === null || newEvent[key] === undefined) {
+        delete newEvent[key]
+      }
+    })
+
     return newEvent
   })
 }
@@ -287,7 +294,10 @@ const reportData = () => {
 
     ws.onmessage = messageFromServer
 
-    ws.onopen = sendQueue
+    ws.onopen = (e) => {
+      log("ws connection opened")
+      setTimeout(sendQueue, 1000) // timeout because the connection isn't always directly ready
+    }
   }
 
   sendQueue()

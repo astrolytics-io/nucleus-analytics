@@ -59,15 +59,27 @@ export const detectData = async () => {
 
     const { ClientJS } = await import("clientjs")
     const client = new ClientJS()
-    const fingerprint = client.getFingerprint()
+
+    // save it because in some rare cases it changes later (ie. iPad changing orientation)
+    if (localStorage.getItem("nucleus-dId")) {
+      data.deviceId = localStorage.getItem("nucleus-dId")
+    } else {
+      data.deviceId = client.getFingerprint().toString()
+      localStorage.setItem("nucleus-dId", data.deviceId)
+    }
+
     const isIpad =
       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 0) ||
-      navigator.platform === "iPad" // iPad Pros UA is same as Mac
+      navigator.platform === "iPad" // iPad Pros UA is same as Mac, so need to look at touchpoints
 
     data.platform = isIpad ? "iPadOS" : client.getOS()
-    data.osVersion = isIpad ? client.getBrowserVersion() : client.getOSVersion() // iOS version is same as browser version
+
+    data.osVersion = isIpad
+      ? client.getBrowserVersion() // iOS version is same as browser version
+      : client.isMac() // on mac the OS version is not reliable https://bugs.webkit.org/show_bug.cgi?id=216593
+      ? null
+      : client.getOSVersion()
     data.locale = client.getLanguage()
-    data.deviceId = fingerprint.toString()
     data.browser = client.getBrowser()
   }
 
