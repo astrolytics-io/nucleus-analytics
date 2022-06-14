@@ -254,11 +254,16 @@ const sendQueue = () => {
   log(`sending stored events (${stored.queue.length})`)
 
   if (!stored.queue.length) {
-    save("queue", [{ type: "heartbeat" }])
+    // if nothing to report, send a heartbeat anyway
+    save("queue", [{ type: "heartbeat", sessionId: localData.sessionId }])
+  } else {
+    // make sure we don't send useless heartbeat events saved previously
+    // (ie. in case of network error)
+    save(
+      "queue",
+      stored.queue.filter((event) => event.type !== "heartbeat")
+    )
   }
-
-  // if nothing to report, send a heartbeat anyway
-  // only device & anonId id needed to derive the other infos server-side
 
   const data = completeEvents(stored.queue)
   const payload = JSON.stringify({ data })
