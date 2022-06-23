@@ -95,6 +95,11 @@ const monitorUserInactivity = () => {
     document.addEventListener(event, resetActiveTimer)
   }
 
+  window.addEventListener("beforeunload", () => {
+    // will send a graceful end to the server but won't be applied if we're only navigating and reconnecting within a few seconds
+    ws.close()
+  })
+
   resetActiveTimer()
 }
 
@@ -302,10 +307,8 @@ const sendQueue = () => {
   }
 
   const data = completeEvents(stored.queue)
-  const payload = JSON.stringify({ data })
-  log(payload)
-
-  ws.send(payload)
+  log(JSON.stringify(data))
+  ws.sendJson(data)
 }
 
 // Try to report the data to the server
@@ -330,6 +333,8 @@ const reportData = () => {
     ws.onclose = (e) => logWarn(`ws closed ${e.code}: ${e.reason}`)
 
     ws.onmessage = messageFromServer
+
+    ws.sendJson = (data) => ws.send(JSON.stringify({ data }))
 
     ws.onopen = (e) => {
       log("ws connection opened")
