@@ -8,17 +8,18 @@ To start using this module, sign up and get an app ID on [Nucleus.sh](https://nu
 
 <b>Electron:</b>
 
-This module works in both the renderer and the main process, but **you should use it in one process only, optherwise you'll see duplicate data. We recommend the renderer process.**
+This module works in both the renderer and the main process, but **you should use it in one process only, otherwise you'll see duplicate data. We recommend the renderer process with nodeIntegration enabled.**
 
 This module can even run in a browser outside of Node (for example in the Electron renderer process with Node Integration disabled).
 
 ## V4.0 breaking changes
 - the `.appStarted()` method has been removed and integrated into .init()
+- the module is now 100% compatible with browser and hybrid environments
 - anonymous users are automatically tracked
+- user sessions now expire after 30 mins of inactivity
 - on Electron, the module is now made to be used in 1 process only (renderer recommended)
-- The device ID is now different between user sessions (existing users will count as new users on the dashboard)
+- The device ID is now different between computer user sessions (existing users will count as new users on the dashboard)
 - `.screen()` has been replaced by `.page()` (but is still available as an alias)
-- the module is now 100% compatible with browser environments
 - the "autoUserId" option has been removed
 - the deprecated `.checkUpdates()` method has been removed
 - events are throttle to 20/s maximum
@@ -75,10 +76,10 @@ Nucleus.init("<Your App Id>", {
   disableInDev: false, // disable module while in development (default: false)
   disableTracking: false, // completely disable tracking from the start (default: false)
   disableErrorReports: false, // disable errors reporting (default: false)
+  sessionTimeout: 60 * 60, // in seconds, after how much inactivity a session expires
   debug: true, // Show logs
 })
 
-Nucleus.appStarted()
 ```
 
 **Each property is optional**. You can start using the module with just the app ID.

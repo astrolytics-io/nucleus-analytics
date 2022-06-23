@@ -2,9 +2,16 @@
   "name": "nucleus-analytics",
   "version": "4.0.0",
   "description": "Analytics and bug reporting for Electron, Node.js and the browser",
-  "type": "module",
-  "main": "src/index.js",
-  "types": "src/index.d.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs",
+      "types": "./src/index.d.ts"
+    }
+  },
   "scripts": {
     "build": "rollup --config",
     "lint": "eslint --fix",

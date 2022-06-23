@@ -45,15 +45,24 @@ export const detectData = async () => {
     /* And fallback to browser info else */
 
     const os = await import("os")
-    const machineId = await import("node-machine-id")
+    const cryptoNode = await import("crypto")
+    const nodeMachineId = await import("node-machine-id")
     const username = os.userInfo().username
-    const uniqueId = await machineId.default.machineId()
+    const uniqueId = await nodeMachineId.default.machineId()
     const osLocale = await import("os-locale")
+
+    // create shorted id from sha256 hash
+    // collision risk is not too worrying here
+    const deviceId = cryptoNode
+      .createHash("sha256")
+      .update(uniqueId + username)
+      .digest("base64")
+      .substring(0, 15)
 
     data.platform = os.type()
     data.osVersion = os.release()
     data.locale = osLocale.sync()
-    data.deviceId = uniqueId + username // unique per user session
+    data.deviceId = deviceId // unique per user session
   } else if (typeof navigator !== "undefined") {
     // Looks like Node is not available. Detecting without
 

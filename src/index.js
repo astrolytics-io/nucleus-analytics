@@ -4,7 +4,6 @@ import throttledQueue from "throttled-queue"
 import { nanoid } from "nanoid"
 
 const throttle = throttledQueue(20, 1000) // at most 20 requests per second.
-
 const WebSocket = getWsClient()
 const store = getStore()
 
@@ -14,11 +13,14 @@ let useInDev = true
 let debug = false
 let trackingOff = false
 let reportInterval = 20
+let sessionTimeout = 30 * 60 // 1 hour
 
-// All the stuff we'll need later globally
+// Variables we'll need later globally
 let ws = null
 let localData = {}
 let initted = false
+let active = true
+let activeTimer = null
 
 const stored = {
   queue: store.get("nucleus-queue") || [],
@@ -68,6 +70,37 @@ const completeEvents = (events) => {
   })
 }
 
+const monitorUserInactivity = () => {
+  // keep track of user inactivity
+  const resetActiveTimer = () => {
+    if (!active) {
+      // the user is active again after expired session, so we need to call init again with a new session id
+      log("user became active again, reinitializing")
+      active = true
+      localData = { ...localData, ...detectSessionId() }
+      Nucleus.track(null, null, "init")
+    }
+
+    if (activeTimer) clearTimeout(activeTimer)
+    activeTimer = setTimeout(() => {
+      log("passed inactive timeout")
+      active = false
+      window.sessionStorage.clear()
+      if (ws) ws.close()
+    }, sessionTimeout * 1000)
+  }
+
+  for (let event of [
+    "mousedown",
+    // "mousemove",
+    "keydown",
+    "touchstart",
+    "scroll",
+  ]) {
+    document.addEventListener(event, resetActiveTimer)
+  }
+}
+
 const Nucleus = {
   // not arrow function for access to this
   init: function (appId, options = {}) {
@@ -77,6 +110,7 @@ const Nucleus = {
 
     if (options.endpoint) endpoint = options.endpoint
     if (options.reportInterval) reportInterval = options.reportInterval
+    if (options.sessionTimeout) sessionTimeout = options.sessionTimeout
 
     if (!appId) return console.error("Nucleus: missing app ID")
 
@@ -90,6 +124,7 @@ const Nucleus = {
       initted = true
     }
 
+    // setup error tracking on node
     if (!options.disableErrorReports && typeof process !== "undefined") {
       process.on("uncaughtException", (err) => {
         this.trackError("uncaughtException", err)
@@ -110,6 +145,8 @@ const Nucleus = {
 
       // Automatically send data when back online
       window.addEventListener("online", reportData)
+
+      monitorUserInactivity()
     }
 
     detectData().then((detectedData) => {
@@ -151,8 +188,10 @@ const Nucleus = {
 
       if (type === "init" && stored.props) data = stored.props
 
+      // remove 500ms from init event to make sure it is always chronologically first
+      // (otherwise the first page event might have same time)
       const timestamp =
-        type === "init" ? new Date() - 1000 : new Date().getTime()
+        type === "init" ? new Date() - 500 : new Date().getTime()
 
       const { sessionId } = localData
 
@@ -254,7 +293,7 @@ const sendQueue = () => {
   log(`sending stored events (${stored.queue.length})`)
 
   if (!stored.queue.length) {
-    // if nothing to report, send a heartbeat anyway
+    // if nothing to report and user is active send a heartbeat
     save("queue", [{ type: "heartbeat", sessionId: localData.sessionId }])
   } else {
     // make sure we don't send useless heartbeat events saved previously
@@ -281,7 +320,7 @@ const reportData = () => {
     stored.queue.filter((event) => new Date(event.date).getTime() > cutoff)
   )
 
-  if (trackingOff) return
+  if (trackingOff || !active) return
 
   // If socket was closed for whatever reason re-open it
   if (!ws || ws.readyState !== WebSocket.OPEN) {
