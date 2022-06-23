@@ -20,7 +20,7 @@ let ws = null
 let localData = {}
 let initted = false
 let active = true
-let activeTimer = null
+let lastActive = new Date().getTime()
 
 const stored = {
   queue: store.get("nucleus-queue") || [],
@@ -73,7 +73,8 @@ const completeEvents = (events) => {
 // keep track of user inactivity via its interactions with the window, and kill the session in case of inactivity
 const monitorUserInactivity = () => {
   const resetActiveTimer = () => {
-    console.log("reset active timer")
+    lastActive = new Date().getTime()
+
     if (!active) {
       // the user is active again after expired session, so we need to call init again with a new session id
       log("user became active again, reinitializing")
@@ -81,19 +82,23 @@ const monitorUserInactivity = () => {
       localData = { ...localData, ...detectSessionId() }
       Nucleus.track(null, null, "init")
     }
-
-    if (activeTimer) clearTimeout(activeTimer)
-    activeTimer = setTimeout(() => {
-      log("passed inactive timeout")
-      active = false
-      window.sessionStorage.clear()
-      if (ws) ws.close()
-    }, sessionTimeout * 1000)
   }
 
   for (let event of ["mousedown", "keydown", "touchstart", "scroll"]) {
     document.addEventListener(event, resetActiveTimer)
   }
+
+  // time-based setInterval instead of setTimeout as browser can slow down internal timer if tab in background
+  setInterval(() => {
+    if (!active) return
+    const inactivityDuration = new Date().getTime() - lastActive
+    if (inactivityDuration > sessionTimeout * 1000) {
+      log("user inactivity timeout")
+      active = false
+      window.sessionStorage.clear()
+      if (ws) ws.close()
+    }
+  }, 1000)
 
   window.addEventListener("beforeunload", () => {
     // will send a graceful end to the server but won't be applied if we're only navigating and reconnecting within a few seconds
