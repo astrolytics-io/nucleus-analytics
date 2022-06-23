@@ -70,9 +70,10 @@ const completeEvents = (events) => {
   })
 }
 
+// keep track of user inactivity via its interactions with the window, and kill the session in case of inactivity
 const monitorUserInactivity = () => {
-  // keep track of user inactivity
   const resetActiveTimer = () => {
+    console.log("reset active timer")
     if (!active) {
       // the user is active again after expired session, so we need to call init again with a new session id
       log("user became active again, reinitializing")
@@ -90,15 +91,11 @@ const monitorUserInactivity = () => {
     }, sessionTimeout * 1000)
   }
 
-  for (let event of [
-    "mousedown",
-    // "mousemove",
-    "keydown",
-    "touchstart",
-    "scroll",
-  ]) {
+  for (let event of ["mousedown", "keydown", "touchstart", "scroll"]) {
     document.addEventListener(event, resetActiveTimer)
   }
+
+  resetActiveTimer()
 }
 
 const Nucleus = {
@@ -328,13 +325,9 @@ const reportData = () => {
 
     ws = new WebSocket(`${endpoint}/app/${localData.appId}/track`)
 
-    ws.onerror = (e) => {
-      logWarn(`ws ${e.code}: ${e.reason}`)
-    }
+    ws.onerror = (e) => logWarn(`ws error ${e.code}: ${e.reason}`)
 
-    ws.onclose = (e) => {
-      logWarn(`ws ${e.code}: ${e.reason}`)
-    }
+    ws.onclose = (e) => logWarn(`ws closed ${e.code}: ${e.reason}`)
 
     ws.onmessage = messageFromServer
 
