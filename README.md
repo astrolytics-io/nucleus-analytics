@@ -36,7 +36,7 @@ $ npm install nucleus-analytics --save
 In the browser:
 
 ```
-<script src="https://cdn.jsdelivr.net/gh/nucleus-sh/nucleus-analytics@browser-support/dist/browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/nucleus-sh/nucleus-analytics/dist/browser.js"></script>
 
 <script>
 Nucleus.init("<Your App Id>")
@@ -77,6 +77,7 @@ Nucleus.init("<Your App Id>", {
   disableTracking: false, // completely disable tracking from the start (default: false)
   disableErrorReports: false, // disable errors reporting (default: false)
   sessionTimeout: 60 * 60, // in seconds, after how much inactivity a session expires
+  useOldDeviceId: false, // use the legacy device ID (default: false)
   debug: true, // Show logs
 })
 
