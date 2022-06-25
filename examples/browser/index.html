@@ -1,0 +1,51 @@
+
+<html>
+  <body>
+    <h1>Hello, World!</h1>
+    <p>
+      Lorem ipsum dolor sit, amet consectetur adipisicing elit. Iure deleniti quis excepturi. Atque totam earum nostrum, fugit incidunt quae facilis magnam. Animi, fugit deleniti? Consequuntur vitae eum cumque? Aut, porro.
+    </p>
+    <br/>
+    <button id="testEvent">Track test event</button>
+    <br/>
+    <br/>
+    <input type="text" id="input" value="testuserid">
+    <button id="setUserId">Set user id</button>
+    <br/>
+    <br/>
+    <button id="testIdentify">Test identify</button>
+  </body>
+  <!-- <script src="https://cdn.jsdelivr.net/gh/nucleus-sh/nucleus-analytics@browser-support/dist/browser.min.js"></script> -->
+
+  <script src="../../dist/browser.js"></script>
+
+  <script>
+    // clear local storage
+    // sessionStorage.clear()
+    // localStorage.clear()
+
+    Nucleus.init("5eb6d2cf90556b799d753178", {
+      endpoint: "ws://localhost:5000",
+      debug: true,
+      sessionTimeout: 10
+    })
+
+    // Nucleus.page()
+
+    document.getElementById("testEvent").addEventListener("click", function() {
+      Nucleus.track("testEvent")
+    })
+
+    document.getElementById("setUserId").addEventListener("click", function() {
+      Nucleus.setUserId(document.getElementById("input").value)
+    })
+
+    document.getElementById("testIdentify").addEventListener("click", function() {
+      Nucleus.identify(document.getElementById("input").value, {
+        name: "Test User",
+        email: "test@email.org",
+      })
+    })
+  </script>
+  
+</html>

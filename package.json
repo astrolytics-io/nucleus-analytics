@@ -1,17 +1,25 @@
 {
-  "name": "nucleus-nodejs",
-  "version": "3.0.9",
-  "description": "Analytics and bug reporting for Electron and Node.js.",
-  "main": "index.js",
-  "types": "index.d.ts",
+  "name": "nucleus-analytics",
+  "version": "4.0.0",
+  "description": "Analytics and bug reporting for Electron, Node.js and the browser",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./src/index.d.ts",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs",
+      "types": "./src/index.d.ts"
+    }
+  },
   "scripts": {
-    "lint": "standard --fix",
-    "prepush": "npm run lint && npm test",
+    "build": "rollup --config",
+    "lint": "eslint --fix",
     "test": "echo 'No test yet.'"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nucleus-sh/nucleus-nodejs.git"
+    "url": "git+https://github.com/nucleus-sh/nucleus-analytics.git"
   },
   "keywords": [
     "analytics",
@@ -24,26 +32,42 @@
   "author": "Nucleus.sh",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/nucleus-sh/nucleus-nodejs/issues"
+    "url": "https://github.com/nucleus-sh/nucleus-analytics/issues"
   },
   "homepage": "https://nucleus.sh",
   "dependencies": {
-    "arch": "^2.2.0"
+    "nanoid": "^3.3.4",
+    "throttled-queue": "^2.1.4"
+  },
+  "prettier": {
+    "semi": false
   },
   "optionalDependencies": {
+    "clientjs": "^0.2.1",
     "conf": "^9.0.0",
     "node-machine-id": "^1.1.12",
     "os-locale": "^5.0.0",
     "ws": "^7.4.6"
   },
   "devDependencies": {
+    "@rollup/plugin-commonjs": "^22.0.0",
+    "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-node-resolve": "^13.3.0",
+    "eslint": "^8.15.0",
     "husky": "^3.1.0",
-    "standard": "^16.0.3"
+    "rollup": "^2.73.0",
+    "rollup-plugin-ignore": "^1.0.10",
+    "rollup-plugin-terser": "^7.0.2"
   },
-  "standard": {
+  "eslint": {
     "globals": [
       "localStorage",
       "WebSocket"
     ]
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "npm run lint && npm test && npm run build"
+    }
   }
 }
