@@ -10,8 +10,6 @@ To start using this module, sign up and get an app ID on [Nucleus.sh](https://nu
 
 This module works in both the renderer and the main process, but **you should use it in one process only, otherwise you'll see duplicate data. We recommend the renderer process with nodeIntegration enabled.**
 
-This module can even run in a browser outside of Node (for example in the Electron renderer process with Node Integration disabled).
-
 ## V4.0 breaking changes
 - the `.appStarted()` method has been removed and integrated into .init()
 - the module is now 100% compatible with browser and hybrid environments
@@ -27,7 +25,7 @@ This module can even run in a browser outside of Node (for example in the Electr
 
 ## Installation
 
-Using npm:
+Using npm (recommended):
 
 ```bash
 $ npm install nucleus-analytics --save
@@ -37,22 +35,27 @@ In the browser:
 
 ```
 <script src="https://cdn.jsdelivr.net/gh/nucleus-sh/nucleus-analytics/dist/browser.js"></script>
-
-<script>
-Nucleus.init("<Your App Id>")
-</script>
 ```
 
 ## Usage
 
-Sign up and get a tracking ID for your app [here](https://nucleus.sh).
+First sign-up and get a tracking ID for your app [here](https://nucleus.sh).
 
-You only need to call `init` once per process.
-
+With ES6 imports:
 
 ```javascript
 import Nucleus from "nucleus-analytics"
+```
 
+Or with CommonJS imports:
+
+```javascript
+const Nucleus = require('nucleus-analytics')
+```
+
+Then:
+
+```javascript
 Nucleus.init("<Your App Id>")
 
 // Optional: sets an user ID
@@ -64,6 +67,8 @@ Nucleus.track("PLAYED_TRACK", {
   duration: 120,
 })
 ```
+
+You only need to call `init` once.
 
 ### Options
 
@@ -150,7 +155,7 @@ Nucleus.setProps({
 })
 ```
 
-Enable overwrite: set the second parameter as true to overwrite past properties.
+Overwrite past properties by setting the second parameter as true.
 
 ```javascript
 Nucleus.setProps({
@@ -160,7 +165,7 @@ Nucleus.setProps({
 
 ### Events
 
-After initializing Nucleus, you can send your own custom events.
+Send your own events and track user actions:
 
 ```javascript
 Nucleus.track("PLAYED_TRACK")
