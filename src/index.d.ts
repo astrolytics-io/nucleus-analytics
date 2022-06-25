@@ -15,6 +15,10 @@ export interface Nucleus {
       disableErrorReports?: boolean;
       /* change how often (in s) events should be refreshed (default: 20s) */
       reportInterval?: number;
+      /* change the inactivity duration after which a session expires (in s) default: 30min) */
+      sessionTimeout?: number;
+      /* use the old device id reporting method */
+      useOldDeviceId?: boolean;
     } 
   ) => void
   setUserId: (id: number | string) => void;

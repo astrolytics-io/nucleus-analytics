@@ -86,8 +86,7 @@ Nucleus.init("<Your App Id>", {
 **Each property is optional**. You can start using the module with just the app ID.
 
 The module will try to autodetect a maximum of data as possible but some can fail to detect.
-
-It will tell you in the logs (if you set `debug: true`) which one it failed to detect.
+It will tell you in the logs which one it failed to detect.
 
 You can also change the data:
 
