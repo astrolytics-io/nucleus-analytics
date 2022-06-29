@@ -20,7 +20,7 @@ export const detectSessionId = () => {
   return data
 }
 
-export const detectData = async () => {
+export const detectData = async (useOldDeviceId) => {
   const data = {
     deviceId: null,
     version: "0.0.0",
@@ -47,17 +47,21 @@ export const detectData = async () => {
     const os = await import("os")
     const cryptoNode = await import("crypto")
     const nodeMachineId = await import("node-machine-id")
-    const username = os.userInfo().username
-    const uniqueId = await nodeMachineId.default.machineId()
     const osLocale = await import("os-locale")
+
+    const uniqueId = await nodeMachineId.default.machineId()
+
+    const username = os.userInfo().username
 
     // create shorted id from sha256 hash
     // collision risk is not too worrying here
-    const deviceId = cryptoNode
-      .createHash("sha256")
-      .update(uniqueId + username)
-      .digest("base64")
-      .substring(0, 15)
+    const deviceId = useOldDeviceId
+      ? uniqueId
+      : cryptoNode
+          .createHash("sha256")
+          .update(uniqueId + username)
+          .digest("base64")
+          .substring(0, 15)
 
     data.platform = os.type()
     data.osVersion = os.release()

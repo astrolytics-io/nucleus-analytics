@@ -156,7 +156,7 @@ const Nucleus = {
       monitorUserInactivity()
     }
 
-    detectData().then((detectedData) => {
+    detectData(options.useOldDeviceId).then((detectedData) => {
       localData = { ...localData, ...detectedData }
 
       const undetectedProps = Object.keys(localData).filter(
