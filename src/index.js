@@ -128,8 +128,9 @@ const Nucleus = {
     // don't track session start if we already did
     if (!localData.existingSession) {
       this.track(null, null, "init")
-      initted = true
     }
+
+    initted = true
 
     // setup error tracking on node
     if (!options.disableErrorReports && typeof process !== "undefined") {
@@ -175,8 +176,7 @@ const Nucleus = {
         return log("in dev mode, not reporting data anything")
 
       // Make sure we stay in sync
-      // And save regularly to disk the latest events
-      // Keeps realtime dashboard updated too
+      // And send/save regularly the latest events without spamming the server in case of bursts
 
       setInterval(reportData, reportInterval * 1000)
       reportData()
@@ -187,6 +187,7 @@ const Nucleus = {
     throttle(() => {
       if (!name && !type) return
       if (trackingOff || (isDevMode() && !useInDev)) return
+      if (!initted && type !== "init") return
 
       log("adding to queue: " + (name || type))
 
@@ -200,6 +201,8 @@ const Nucleus = {
       const timestamp =
         type === "init" ? new Date() - 500 : new Date().getTime()
 
+      // we don't put this in "completeEvents" in case the user changes session before
+      // the data can be synced, we want to keep the ref to the correct session
       const { sessionId } = localData
 
       const eventData = {
@@ -235,7 +238,7 @@ const Nucleus = {
     save("userId", newId)
 
     // if we already initted, send the new id
-    if (initted) this.track(null, null, "userid")
+    this.track(null, null, "userid")
   },
 
   // Allows to set custom properties to users
@@ -253,7 +256,7 @@ const Nucleus = {
     else save("props", newProps)
 
     // if we already initted, send the new props
-    if (initted) this.track(null, stored.props, "props")
+    this.track(null, stored.props, "props")
   },
 
   // Allows for setting both setting user and properties at the same time

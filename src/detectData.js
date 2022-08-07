@@ -29,71 +29,76 @@ export const detectData = async (useOldDeviceId) => {
     osVersion: null,
   }
 
-  /* Try to find version with Electron */
+  // try/catch as we don't want a unhandled problem in data detection
+  // to prevent the rest of the 'init' sequence
   try {
-    const { remote, app } = await import("electron")
-    const electronApp = remote ? remote.app : app // Depends on process
+    // Try to find version with Electron
+    try {
+      const { remote, app } = await import("electron")
+      const electronApp = remote ? remote.app : app // Depends on process
 
-    localData.version = isDevMode() ? "0.0.0" : electronApp.getVersion()
-  } catch (e) {
-    // log("Looks like it's not an Electron app.")
-    // Electron not available
-  }
-
-  if (typeof process !== "undefined") {
-    /* Find with Node */
-    /* And fallback to browser info else */
-
-    const os = await import("os")
-    const cryptoNode = await import("crypto")
-    const nodeMachineId = await import("node-machine-id")
-    const osLocale = await import("os-locale")
-
-    const uniqueId = await nodeMachineId.default.machineId()
-
-    const username = os.userInfo().username
-
-    // create shorted id from sha256 hash
-    // collision risk is not too worrying here
-    const deviceId = useOldDeviceId
-      ? uniqueId
-      : cryptoNode
-          .createHash("sha256")
-          .update(uniqueId + username)
-          .digest("base64")
-          .substring(0, 15)
-
-    data.platform = os.type()
-    data.osVersion = os.release()
-    data.locale = osLocale.sync()
-    data.deviceId = deviceId // unique per user session
-  } else if (typeof navigator !== "undefined") {
-    // Looks like Node is not available. Detecting without
-
-    const { ClientJS } = await import("clientjs")
-    const client = new ClientJS()
-
-    // save it because in some rare cases it changes later (ie. iPad changing orientation)
-    if (localStorage.getItem("nucleus-dId")) {
-      data.deviceId = localStorage.getItem("nucleus-dId")
-    } else {
-      data.deviceId = client.getFingerprint().toString()
-      localStorage.setItem("nucleus-dId", data.deviceId)
+      localData.version = isDevMode() ? "0.0.0" : electronApp.getVersion()
+    } catch (e) {
+      // log("Looks like it's not an Electron app.")
+      // Electron not available
     }
 
-    const isIpad =
-      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 0) ||
-      navigator.platform === "iPad" // iPad Pros UA is same as Mac, so need to look at touchpoints
+    if (typeof process !== "undefined") {
+      // Try to find with Node, and fallback to browser info else
 
-    data.platform = isIpad ? "iPadOS" : client.getOS()
+      const os = await import("os")
+      const cryptoNode = await import("crypto")
+      const nodeMachineId = await import("node-machine-id")
+      const osLocale = await import("os-locale")
 
-    data.osVersion = isIpad
-      ? client.getBrowserVersion() // iOS version is same as browser version
-      : client.isMac() // on mac the OS version is not reliable https://bugs.webkit.org/show_bug.cgi?id=216593
-      ? null
-      : client.getOSVersion()
-    data.locale = client.getLanguage()
-    data.browser = client.getBrowser()
+      const uniqueId = await nodeMachineId.default.machineId()
+
+      const username = os.userInfo().username
+
+      // create shorted id from sha256 hash
+      // collision risk is not too worrying here
+      const deviceId = useOldDeviceId
+        ? uniqueId
+        : cryptoNode
+            .createHash("sha256")
+            .update(uniqueId + username)
+            .digest("base64")
+            .substring(0, 15)
+
+      data.platform = os.type()
+      data.osVersion = os.release()
+      data.locale = osLocale.sync()
+      data.deviceId = deviceId // unique per user session
+    } else if (typeof navigator !== "undefined") {
+      // Looks like Node is not available. Detecting without
+
+      const { ClientJS } = await import("clientjs")
+      const client = new ClientJS()
+
+      // save it because in some rare cases it changes later (ie. iPad changing orientation)
+      if (localStorage.getItem("nucleus-dId")) {
+        data.deviceId = localStorage.getItem("nucleus-dId")
+      } else {
+        data.deviceId = client.getFingerprint().toString()
+        localStorage.setItem("nucleus-dId", data.deviceId)
+      }
+
+      const isIpad =
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 0) ||
+        navigator.platform === "iPad" // iPad Pros UA is same as Mac, so need to look at touchpoints
+
+      data.platform = isIpad ? "iPadOS" : client.getOS()
+
+      data.osVersion = isIpad
+        ? client.getBrowserVersion() // iOS version is same as browser version
+        : client.isMac() // on mac the OS version is not reliable https://bugs.webkit.org/show_bug.cgi?id=216593
+        ? null
+        : client.getOSVersion()
+      data.locale = client.getLanguage()
+      data.browser = client.getBrowser()
+    }
+  } catch (e) {
+    console.error(e)
   }
 
   return data
