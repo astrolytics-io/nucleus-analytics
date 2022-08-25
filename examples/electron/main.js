@@ -4,6 +4,23 @@
 const { app, BrowserWindow } = require("electron")
 const path = require("path")
 
+// const Nucleus = require("nucleus-analytics")
+
+// Nucleus.init("62b04f270d5debec3e5d937b", {
+//   // endpoint: "ws://localhost:5000",
+//   debug: true,
+//   //sessionTimeout: 10, // 1 minute
+// })
+
+// Nucleus.page("home")
+
+// Nucleus.setProps(
+//   {
+//     version: "2.0.0",
+//   },
+//   true
+// )
+
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({

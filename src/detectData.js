@@ -1,3 +1,5 @@
+import { isDevMode } from "./utils.js"
+
 const createSessionId = () => Math.floor(Math.random() * 1e6) + 1
 
 export const detectSessionId = () => {
@@ -20,14 +22,16 @@ export const detectSessionId = () => {
   return data
 }
 
+export const defaultProps = {
+  deviceId: null,
+  version: null,
+  locale: null,
+  platform: null,
+  osVersion: null,
+}
+
 export const detectData = async (useOldDeviceId) => {
-  const data = {
-    deviceId: null,
-    version: "0.0.0",
-    locale: null,
-    platform: null,
-    osVersion: null,
-  }
+  const data = { ...defaultProps }
 
   // try/catch as we don't want a unhandled problem in data detection
   // to prevent the rest of the 'init' sequence
@@ -35,9 +39,9 @@ export const detectData = async (useOldDeviceId) => {
     // Try to find version with Electron
     try {
       const { remote, app } = await import("electron")
-      const electronApp = remote ? remote.app : app // Depends on process
-
-      localData.version = isDevMode() ? "0.0.0" : electronApp.getVersion()
+      // Depends on process, remote won't work on Electron 10+ as remote is not packaged anymore
+      const electronApp = remote ? remote.app : app
+      data.version = electronApp.getVersion()
     } catch (e) {
       // log("Looks like it's not an Electron app.")
       // Electron not available

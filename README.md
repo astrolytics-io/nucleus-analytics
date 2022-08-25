@@ -8,7 +8,7 @@ To start using this module, sign up and get an app ID on [Nucleus.sh](https://nu
 
 <b>Electron:</b>
 
-This module works in both the renderer and the main process, but **you should use it in one process only, otherwise you'll see duplicate data. We recommend the renderer process with nodeIntegration enabled.**
+This module works in both the renderer and the main process, but **you should use it in one process only, otherwise you'll see duplicate data. For maximum data accuracy, we recommend the renderer process.**
 
 ## V4.0 breaking changes
 - the `.appStarted()` method has been removed and integrated into .init()
@@ -93,17 +93,30 @@ Nucleus.init("<Your App Id>", {
 The module will try to autodetect a maximum of data as possible but some can fail to detect.
 It will tell you in the logs which one it failed to detect.
 
-You can also change the data:
+You can manually add data:
 
 ```javascript
 Nucleus.setProps({
   version: "0.3.1",
-  language: "fr",
+  locale: "fr",
   // ...
 })
 ```
 
-**Note** : when running in development, the app version will be '0.0.0'
+### Electron Version detection
+
+Version detection only works on Electron's main process as newest Electron versions don't supply the remote module version. 
+
+To get the version programmatically in Electron's renderer process you need to [setup the remote object](https://github.com/electron/remote), you can then track the version with:
+
+
+```javascript
+const { app } = require('@electron/remote')
+
+Nucleus.setProps({
+  version: app.getVersion(),
+})
+```
 
 ### Identify your users
 

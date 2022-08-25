@@ -21,14 +21,14 @@ export interface Nucleus {
       useOldDeviceId?: boolean;
     } 
   ) => void
-  setUserId: (id: number | string) => void;
+  setUserId: (id: string) => void;
   trackError: (name: string, error: Error) => void;
   setProps: (
     props: { [key: string]: string | number | boolean }, 
     overwrite: boolean
   ) => void;
   identify: (
-    id: number | string,
+    id: string,
     props: { [key: string]: string | number | boolean }
   ) => void;
   page: (

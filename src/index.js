@@ -1,5 +1,7 @@
 import { getStore, getWsClient, isDevMode, debounce } from "./utils.js"
-import { detectData, detectSessionId } from "./detectData.js"
+
+import { detectData, detectSessionId, defaultProps } from "./detectData.js"
+
 import throttledQueue from "throttled-queue"
 import { nanoid } from "nanoid"
 
@@ -158,7 +160,7 @@ const Nucleus = {
     }
 
     detectData(options.useOldDeviceId).then((detectedData) => {
-      localData = { ...localData, ...detectedData }
+      localData = { ...detectedData, ...localData }
 
       const undetectedProps = Object.keys(localData).filter(
         (prop) => !localData[prop]
@@ -245,15 +247,17 @@ const Nucleus = {
   setProps: function (newProps, overwrite) {
     // If it's part of the localData object overwrite there
     for (const prop in newProps) {
-      if (localData[prop]) {
+      if (prop in defaultProps) {
         localData[prop] = newProps[prop]
-        newProps[prop] = null
+        delete newProps[prop]
       }
     }
 
     // Merge past and new props
-    if (!overwrite) save("props", Object.assign(stored.props, newProps))
+    if (!overwrite) save("props", { ...stored.props, ...newProps })
     else save("props", newProps)
+
+    if (!Object.keys(newProps).length) return
 
     // if we already initted, send the new props
     this.track(null, stored.props, "props")
