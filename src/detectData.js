@@ -71,7 +71,7 @@ export const detectData = async (useOldDeviceId) => {
 
       data.platform = os.type()
       data.osVersion = os.release()
-      data.locale = osLocale.sync()
+      data.locale = osLocale.osLocaleSync()
       data.deviceId = deviceId // unique per user session
     } else if (typeof navigator !== "undefined") {
       // Looks like Node is not available. Detecting without
