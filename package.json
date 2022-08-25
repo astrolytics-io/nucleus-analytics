@@ -1,6 +1,6 @@
 {
   "name": "nucleus-analytics",
-  "version": "4.0.1",
+  "version": "4.0.2",
   "description": "Analytics and bug reporting for Electron, Node.js and the browser",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
