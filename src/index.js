@@ -97,7 +97,7 @@ const monitorUserInactivity = () => {
     if (inactivityDuration > sessionTimeout * 1000) {
       log("user inactivity timeout")
       active = false
-      window.sessionStorage.clear()
+      window.sessionStorage.clear() // clear sessionstorage to get a fresh sessionId
       if (ws) ws.close()
     }
   }, 1000)
