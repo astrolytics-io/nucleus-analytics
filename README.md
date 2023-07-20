@@ -1,18 +1,11 @@
 # nucleus-analytics [![npm](https://img.shields.io/npm/v/nucleus-analytics.svg)](https://www.npmjs.com/package/nucleus-analytics)
 
-Isomorphic analytics and error tracking library for browser, Node.js, Electron and NW.js desktop applications.
-
-We made it as simple as possible to report the data you need to analyze your app and improve it.
-
 To start using this module, sign up and get an app ID on [Nucleus.sh](https://nucleus.sh).
-
-<b>Electron:</b>
 
 This module works in both the renderer and the main process, but **you should use it in one process only, otherwise you'll see duplicate data. For maximum data accuracy, we recommend the renderer process.**
 
 ## V4.0 breaking changes
 - the `.appStarted()` method has been removed and integrated into .init()
-- the module is now 100% compatible with browser and hybrid environments
 - anonymous users are automatically tracked
 - user sessions now expire after 30 mins of inactivity
 - on Electron, the module is now made to be used in 1 process only (renderer recommended)
@@ -20,21 +13,16 @@ This module works in both the renderer and the main process, but **you should us
 - `.screen()` has been replaced by `.page()` (but is still available as an alias)
 - the "autoUserId" option has been removed
 - the deprecated `.checkUpdates()` method has been removed
-- events are throttle to 20/s maximum
-- stop tracking device ram and arch
+- events are throttled to 20/s maximum
+- stopped tracking device ram and arch
 
 ## Installation
 
-Using npm (recommended):
+Using npm or yarn (recommended):
 
 ```bash
-$ npm install nucleus-analytics --save
-```
-
-In the browser:
-
-```
-<script src="https://cdn.jsdelivr.net/gh/nucleus-sh/nucleus-analytics/dist/browser.js"></script>
+$ npm install nucleus-analytics
+$ yarn add nucleus-analytics
 ```
 
 ## Usage
@@ -105,7 +93,7 @@ Nucleus.setProps({
 
 ### Electron Version detection
 
-Version detection only works on Electron's main process as newest Electron versions don't supply the remote module version. 
+Version detection only works on Electron's main process as newest Electron versions don't supply the remote module version.
 
 To get the version programmatically in Electron's renderer process you need to [setup the remote object](https://github.com/electron/remote), you can then track the version with:
 
@@ -212,7 +200,7 @@ For that, whenever the user navigates to a different page, call the `.page()` me
 Nucleus.page("View Name")
 ```
 
-You can attach extra info about the view. Example: 
+You can attach extra info about the view. Example:
 
 ```javascript
 Nucleus.page("Cart", {
