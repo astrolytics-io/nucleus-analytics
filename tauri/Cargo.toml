@@ -1,0 +1,19 @@
+[package]
+name = "nucleus-tauri-utils"
+version = "1.0.0"
+authors = ["The Nucleus Team <hello@nucleus.sh>"]
+edition = "2021"
+description = "Utilities for Nucleus Tauri SDK"
+homepage = "https://www.nucleus.sh"
+
+[lib]
+crate-type = ["lib"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+uuid = "*"
+tauri = "*"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }

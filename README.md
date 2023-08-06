@@ -1,245 +1,127 @@
-# nucleus-analytics [![npm](https://img.shields.io/npm/v/nucleus-analytics.svg)](https://www.npmjs.com/package/nucleus-analytics)
+# Nucleus.sh Desktop SDK
 
-To start using this module, sign up and get an app ID on [Nucleus.sh](https://nucleus.sh).
+![Nucleus.sh](https://intriguing-lemonade-efa.notion.site/image/https%3A%2F%2Fs3-us-west-2.amazonaws.com%2Fsecure.notion-static.com%2Fb00319ab-5801-40dc-b0f4-5de683b11d61%2Fgithub_browser_sdk_banner.jpg?id=9fabfb89-61d3-4d87-97ff-ef88c9bd8947&table=block)
 
-This module works in both the renderer and the main process, but **you should use it in one process only, otherwise you'll see duplicate data. For maximum data accuracy, we recommend the renderer process.**
+Nucleus currently works with Electron and Tauri. If you'd like us to support another desktop framework, send us an email to hello@nucleus.sh.
 
-## V4.0 breaking changes
-- the `.appStarted()` method has been removed and integrated into .init()
-- anonymous users are automatically tracked
-- user sessions now expire after 30 mins of inactivity
-- on Electron, the module is now made to be used in 1 process only (renderer recommended)
-- The device ID is now different between computer user sessions (existing users will count as new users on the dashboard)
-- `.screen()` has been replaced by `.page()` (but is still available as an alias)
-- the "autoUserId" option has been removed
-- the deprecated `.checkUpdates()` method has been removed
-- events are throttled to 20/s maximum
-- stopped tracking device ram and arch
+## Table of Contents
 
-## Installation
+1. [Getting Started](#getting-started)
+2. [Usage](#usage)
+3. [How to Contribute](#how-to-contribute)
 
-Using npm or yarn (recommended):
+## Getting Started
+
+To get started with Nucleus, create an account at [Nucleus](https://dash.nucleus.sh/login) and grab the App ID, then
+use the SDK to start tracking events.
+
+### Installation
+
+As NPM package (recommended)
 
 ```bash
-$ npm install nucleus-analytics
-$ yarn add nucleus-analytics
+# with npm
+npm install nucleus-analytics
+
+# or with yarn
+yarn add nucleus-analytics
 ```
 
-## Usage
+### Usage
 
-First sign-up and get a tracking ID for your app [here](https://nucleus.sh).
-
-With ES6 imports:
 
 ```javascript
-import Nucleus from "nucleus-analytics"
+import Nucleus from 'nucleus-analytics';
+
+Nucleus.init('YOUR_APP_ID');
 ```
 
-Or with CommonJS imports:
+Replace `'YOUR_APP_ID'` with the unique ID of your app. You can get it [here](https://dash.nucleus.sh/account).
 
-```javascript
-const Nucleus = require('nucleus-analytics')
-```
+You can check examples with different frameworks [here](./playground).
 
-Then:
+## API
 
-```javascript
-Nucleus.init("<Your App Id>")
+Nucleus supports passing the following options as second argument to the `Nucleus.init()` method:
 
-// Optional: sets an user ID
-Nucleus.setUserId("richard_hendrix")
-
-// Report things
-Nucleus.track("PLAYED_TRACK", {
-  trackName: "My Awesome Song",
-  duration: 120,
+```js
+Nucleus.init('APP_ID', {
+  endpoint: 'wss://app.nucleus.sh', // only option, we don't allow self hosting yet :(
+  disableInDev: true, // disable in development mode. We recommend not to call
+                      // `init` method, as that will be more reliable.
+  debug: false, // if set to `true`, will log a bunch of things.
+  disableTracking: false, // will not track anything. You can also use `Nucleus.disableTracking()`.
+                          // note that some events will still be added to the queue, so if you call
+                          // Nucleus.enableTracking() again, they will be sent to the server.
+  automaticPageTracking: true, // will track all page changes.
+  reportInterval: 2 * 1000, // at which interval the events are sent to the server.
+  sessionTimeout: 60 * 30 * 1000, // time after which the session is ended
+  cutoff: 60 * 60 * 48 * 1000, // time after which event that were not sent yet are deleted
+  disableErrorReports: false, // wether to disable error tracking
 })
 ```
 
-You only need to call `init` once.
+### Tracking
 
-### Options
-
-You can init Nucleus with options:
+Track events with optional custom data
 
 ```javascript
-import Nucleus from "nucleus-analytics"
-
-Nucleus.init("<Your App Id>", {
-  disableInDev: false, // disable module while in development (default: false)
-  disableTracking: false, // completely disable tracking from the start (default: false)
-  disableErrorReports: false, // disable errors reporting (default: false)
-  sessionTimeout: 60 * 60, // in seconds, after how much inactivity a session expires
-  useOldDeviceId: false, // use the legacy device ID (default: false)
-  debug: true, // Show logs
-})
-
+Nucleus.track("click", { foo: 'bar' });
 ```
 
-**Each property is optional**. You can start using the module with just the app ID.
+### Error Tracking
 
-The module will try to autodetect a maximum of data as possible but some can fail to detect.
-It will tell you in the logs which one it failed to detect.
-
-You can manually add data:
+Track errors with a name and the Error object.
 
 ```javascript
-Nucleus.setProps({
-  version: "0.3.1",
-  locale: "fr",
-  // ...
-})
+Nucleus.trackError(name, error);
 ```
 
-### Electron Version detection
+By default Nucleus will listen for `window.onerror` and `window.onunhandledrejection` events and send them to the API. If you want
+to disable this behaviour, you can set `disableErrorReports` to `true`:
 
-Version detection only works on Electron's main process as newest Electron versions don't supply the remote module version.
+```js
+Nucleus.init('APP_ID', { disableErrorReports: true })
+```
 
-To get the version programmatically in Electron's renderer process you need to [setup the remote object](https://github.com/electron/remote), you can then track the version with:
+### User Identification
 
+Identify a user by a unique ID and optionally set custom properties.
 
 ```javascript
-const { app } = require('@electron/remote')
-
-Nucleus.setProps({
-  version: app.getVersion(),
-})
+Nucleus.identify('04f8846d-ecca-4a81-8740-f6428ceb7f7b', { firstName: 'Brendan', lastName: 'Eich' });
 ```
 
-### Identify your users
+### Page Tracking
 
-You can track specific users actions on the 'User Explorer' section of your dashboard.
-
-For that, you need to supply an `userId`, a string that will allow you to track your users.
-
-It can be your own generated ID, an email, username... etc.
+Track page views with the page name and optional parameters. If the page name is not provided, the current window's pathname is used.
 
 ```javascript
-Nucleus.identify("someUniqueUserId")
+Nucleus.page('/about', { foo: 'baz' });
 ```
 
-You can also pass custom attributes to be reported along with it.
+By default, Nucleus will track any page change by polling the url every 50 ms. If you prefer to manually track page changes, set `automaticPageTracking` to false and call `Nucleus.page()` on every page change.
+
+### Disabling Tracking
+
+To disable tracking
 
 ```javascript
-Nucleus.identify("someUniqueUserId", {
-  age: 34,
-  name: "Richard Hendricks",
-  jobType: "CEO",
-})
+Nucleus.disableTracking();
 ```
 
-If you call `.identify()` multiple times, the last one will be remembered as the current user data (it will overwrite).
+### Enabling Tracking
 
-Later on, you can update the userId only (and keep the attributes) with this method:
+To enable tracking
 
 ```javascript
-Nucleus.setUserId("someUniqueUserId")
+Nucleus.enableTracking();
 ```
 
+## How to Contribute
 
-### Update user attributes
+We're always looking for contributions from the community. Here's how you can help:
 
-You can report custom user attributes along with the automatic data.
-
-Those will be visible in your user dashboard if you previously set an user ID.
-
-The module will remember past properties so you can use `Nucleus.setProps` multiple times without overwriting past props.
-
-Properties can either **numbers**, **strings** or **booleans**.
-Nested properties or arrays aren't supported at the moment.
-
-```javascript
-Nucleus.setProps({
-  age: 34,
-  name: "Richard Hendricks",
-  jobType: "CEO",
-})
-```
-
-Overwrite past properties by setting the second parameter as true.
-
-```javascript
-Nucleus.setProps({
-  age: 23
-}, true)
-```
-
-### Events
-
-Send your own events and track user actions:
-
-```javascript
-Nucleus.track("PLAYED_TRACK")
-```
-
-They are a couple event names that are reserved by Nucleus: `init`, `error:` and `nucleus:`. Don't report events containing these strings.
-
-#### Attach custom data
-
-You can also add extra information to tracked events, as a JSON object.
-
-Properties can either **numbers**, **strings** or **booleans**.
-Nested properties or arrays aren't supported at the moment (they won't show in the dashboard).
-
-Example
-
-```javascript
-Nucleus.track("PLAYED_TRACK", {
-  trackName: "My Awesome Song",
-  duration: 120,
-})
-```
-
-#### Pages and Screen Views (beta)
-
-You can set up Nucleus to track page visits and screen views in your app.
-
-For that, whenever the user navigates to a different page, call the `.page()` method with the new view name.
-
-```javascript
-Nucleus.page("View Name")
-```
-
-You can attach extra info about the view. Example:
-
-```javascript
-Nucleus.page("Cart", {
-  action: "addItem",
-  count: 5
-})
-```
-
-Params can either be **numbers**, **strings** or **booleans**.
-Nested params or arrays aren't supported at the moment (they won't show in the dashboard).
-
-### Toggle tracking
-
-This will completely disable any communication with Nucleus' servers.
-
-To opt-out your users from tracking, use the following methods:
-
-```javascript
-Nucleus.disableTracking()
-```
-
-and to opt back in:
-
-```javascript
-Nucleus.enableTracking()
-```
-
-This change won't persist after restarts so you have to handle the saving of the settings.
-
-You can also supply a `disableTracking: true` option to the module on start if you want to directly prevent tracking.
-
-### Error tracking
-
-Nucleus will by default report all `uncaughtException`, `unhandledRejection` and `windowError` events.
-
-If you'd like to report another type of error, you can do so with:
-
-```javascript
-Nucleus.trackError("myCustomError", err)
-```
-
-Contact **hello@nucleus.sh** for any inquiry
+1. **Report Bugs**: Create an issue report detailing the bug you've found.
+2. **Suggest Features**: Have a great idea for Nucleus? Don't hesitate to put it forward by creating an issue.
+3. **Submit Pull Requests**: Feel free to fix a bug or add a new feature and create a pull request. Make sure to follow the existing code style, and write clear commit messages explaining your changes.

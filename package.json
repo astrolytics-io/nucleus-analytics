@@ -1,73 +1,41 @@
 {
   "name": "nucleus-analytics",
-  "version": "4.0.3",
-  "description": "Analytics and bug reporting for Electron, Node.js and the browser",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./src/index.d.ts",
-  "exports": {
-    ".": {
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs",
-      "types": "./src/index.d.ts"
-    }
-  },
-  "scripts": {
-    "build": "rollup --config",
-    "lint": "eslint --fix",
-    "test": "echo 'No test yet.'"
-  },
+  "version": "1.0.0",
+  "main": "./dist/bundle.cjs.js",
+  "module": "./dist/bundle.esm.js",
+  "types": "./dist/types/index.d.ts",
+  "type": "module",
+  "license": "MIT",
+  "homepage": "https://www.nucleus.sh",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nucleus-sh/nucleus-analytics.git"
+    "url": "https://github.com/nucleus-sh/nucleus-analytics.git"
   },
-  "keywords": [
-    "analytics",
-    "tracking",
-    "crash",
-    "bugs",
-    "nw.js",
-    "electron"
+  "files": [
+    "dist"
   ],
-  "author": "Nucleus.sh",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/nucleus-sh/nucleus-analytics/issues"
-  },
-  "homepage": "https://nucleus.sh",
-  "dependencies": {
-    "nanoid": "^4.0.0",
-    "throttled-queue": "^2.1.4"
-  },
-  "prettier": {
-    "semi": false
-  },
-  "optionalDependencies": {
-    "clientjs": "^0.2.1",
-    "conf": "^10.2.0",
-    "node-machine-id": "^1.1.12",
-    "os-locale": "^6.0.2",
-    "ws": "^8.8.1"
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "nodemon -w src -e ts,js --exec 'yarn build-dev'",
+    "build-dev": "BUILD_DEV=true rollup -c"
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^22.0.0",
-    "@rollup/plugin-json": "^4.1.0",
-    "@rollup/plugin-node-resolve": "^13.3.0",
-    "eslint": "^8.15.0",
-    "husky": "^3.1.0",
-    "rollup": "^2.73.0",
-    "rollup-plugin-ignore": "^1.0.10",
-    "rollup-plugin-terser": "^7.0.2"
+    "@rollup/plugin-commonjs": "^25.0.3",
+    "@rollup/plugin-node-resolve": "^15.1.0",
+    "@rollup/plugin-replace": "^5.0.2",
+    "@types/clientjs": "^0.2.0",
+    "@types/nanoid": "^3.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^7.32.0 || ^8.2.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.25.2",
+    "nodemon": "^3.0.1",
+    "rollup": "^3.26.2",
+    "rollup-plugin-typescript2": "^0.35.0",
+    "typescript": "^5.1.6"
   },
-  "eslint": {
-    "globals": [
-      "localStorage",
-      "WebSocket"
-    ]
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "npm run lint && npm test && npm run build"
-    }
+  "dependencies": {
+    "clientjs": "^0.2.1"
   }
 }
