@@ -3,6 +3,7 @@ name = "nucleus-tauri-utils"
 version = "1.0.0"
 authors = ["The Nucleus Team <hello@nucleus.sh>"]
 edition = "2021"
+license = "MIT"
 description = "Utilities for Nucleus Tauri SDK"
 homepage = "https://www.nucleus.sh"
 
